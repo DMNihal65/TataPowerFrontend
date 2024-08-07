@@ -1,15 +1,44 @@
-import { useState } from 'react'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { ChakraProvider } from '@chakra-ui/react';
 
-function App() {
-  const [count, setCount] = useState(0)
+// Page components
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Dashboard from './pages/Dashboard';
+import PartNumberManagement from './pages/PartNumberManagement';
+import DocumentUpload from './pages/DocumentUpload';
+import DocumentApproval from './pages/DocumentApproval';
+import Notifications from './pages/Notifications';
 
+// // Layout components
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+
+const App = () => {
   return (
-    <h1 className="text-2xl font-bold underline">
- Main Home Page
- Just import the componets here 
-  </h1>
-  )
-}
+    <ChakraProvider>
+      <Router>
+        <div className="flex h-screen bg-gray-100">
+          <Sidebar />
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <Header />
+            <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-200">
+              <Routes>
+                <Route path="/" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/part-numbers" element={<PartNumberManagement />} />
+                <Route path="/document-upload" element={<DocumentUpload />} />
+                <Route path="/document-approval" element={<DocumentApproval />} />
+                <Route path="/notifications" element={<Notifications />} />
+              </Routes>
+            </main>
+          </div>
+        </div>
+      </Router>
+    </ChakraProvider>
+  );
+};
 
-export default App
+export default App;
