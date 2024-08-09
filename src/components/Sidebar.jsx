@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Box, VStack, IconButton, Text } from '@chakra-ui/react';
+import { Box, VStack, IconButton, Image, Text, Flex } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import { Home, Package, FileUp, CheckSquare, Bell, Menu } from 'lucide-react';
-import { Flex, Spacer } from '@chakra-ui/react'
+import logoSrc from '../assets/Tata_Power_Logo.png';
 
 const NavItem = ({ icon, children, to }) => (
   <Link to={to}>
@@ -28,48 +28,64 @@ const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <Box
-      as="nav"
-      pos="fixed"
-      top="0"
-      left="0"
-      zIndex="sticky"
-      h="full"
-      pb="10"
-      overflowX="hidden"
-      overflowY="auto"
-      bg="white"
-      borderRight="1px"
-      borderRightColor="gray.200"
-      w={isCollapsed ? "60px" : "240px"}
-      transition="width 0.2s"
-    >
-      <Flex px="4" py="5" align="center" justify="space-between">
-        {!isCollapsed && <Text fontSize="2xl" fontWeight="bold">Tata Power</Text>}
-        <IconButton
-          aria-label="Menu Collapse"
-          icon={<Menu />}
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          variant="outline"
-        />
-      </Flex>
-      <VStack spacing={4} align="stretch" mt={8}>
-        <NavItem icon={<Home />} to="/dashboard">
-          {!isCollapsed && "Dashboard"}
-        </NavItem>
-        <NavItem icon={<Package />} to="/part-numbers">
-          {!isCollapsed && "Part Numbers"}
-        </NavItem>
-        <NavItem icon={<FileUp />} to="/document-upload">
-          {!isCollapsed && "Document Upload"}
-        </NavItem>
-        <NavItem icon={<CheckSquare />} to="/document-approval">
-          {!isCollapsed && "Document Approval"}
-        </NavItem>
-        <NavItem icon={<Bell />} to="/notifications">
-          {!isCollapsed && "Notifications"}
-        </NavItem>
-      </VStack>
+    <Box pos="relative">
+      <Box
+        as="nav"
+        pos="fixed"
+        top="0"
+        left="0"
+        zIndex="sticky"
+        h="full"
+        pb="10"
+        overflowX="hidden"
+        overflowY="auto"
+        bg="white"
+        borderRight="1px"
+        borderRightColor="gray.200"
+        w={isCollapsed ? "0" : "240px"}
+        transition="width 0.2s"
+      >
+        <Flex px="4" py="5" align="center" justify="space-between">
+          <Image
+            src={logoSrc}
+            alt="Logo"
+            height="17px"
+            objectFit="contain"
+            visibility={isCollapsed ? "hidden" : "visible"}
+          />
+        </Flex>
+        {!isCollapsed && (
+          <VStack spacing={4} align="stretch" mt={8}>
+            <NavItem icon={<Home />} to="/dashboard">
+              "Dashboard"
+            </NavItem>
+            <NavItem icon={<Package />} to="/part-numbers">
+              "Part Numbers"
+            </NavItem>
+            <NavItem icon={<FileUp />} to="/document-upload">
+              "Document Upload"
+            </NavItem>
+            <NavItem icon={<CheckSquare />} to="/document-approval">
+              "Document Approval"
+            </NavItem>
+            <NavItem icon={<Bell />} to="/notifications">
+              "Notifications"
+            </NavItem>
+          </VStack>
+        )}
+      </Box>
+
+      {/* Floating Menu Button */}
+      <IconButton
+        aria-label="Menu Collapse"
+        icon={<Menu />}
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        variant="outline"
+        pos="fixed"
+        top="20px"
+        left={isCollapsed ? "10px" : "250px"} // Adjusts position based on sidebar state
+        zIndex="sticky"
+      />
     </Box>
   );
 };

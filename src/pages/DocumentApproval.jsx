@@ -129,11 +129,14 @@ const DocumentApproval = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-8">Document Approval</h1>
+    <div className="p-6">
+      <h2 className="text-3xl font-bold mb-8 text-center lg:text-left lg:ml-[300px]">Document Approval</h2>
       
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <Table columns={columns} dataSource={data} />
+      <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+        <Table columns={columns} dataSource={data}
+         scroll={{ x: 600 }}  // Enables horizontal scroll on small screens
+          pagination={{ pageSize: 5 }} // Adjust pagination for better mobile view
+       />
       </div>
 
       <Modal
@@ -141,7 +144,10 @@ const DocumentApproval = () => {
         visible={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
-        width={700}
+        width="90%" // Set the width to 90% for mobile view
+        style={{ maxWidth: '300px' }} // Set a max width for larger screens
+        bodyStyle={{ padding: '3px' }} // Adjust padding for a better appearance
+        centered // Center the modal on the screen
       >
         {selectedDocument && (
           <div className="p-4">
@@ -151,7 +157,7 @@ const DocumentApproval = () => {
             <p><strong>Upload Date:</strong> {selectedDocument.uploadDate}</p>
             <div className="mt-8 flex justify-end space-x-4">
               <Button 
-                type="primary" 
+                type="primary"  
                 icon={<CheckCircle className="mr-2" size={16} />}
                 onClick={handleApprove}
                 className="bg-green-500 hover:bg-green-600"

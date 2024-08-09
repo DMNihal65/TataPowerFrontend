@@ -1,3 +1,31 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* .login{
+    margin-left: 550px;
+    margin-top: 50px;
+    margin-bottom: 60px;
+} */
+
+
+body {
+    margin: 0;
+    height: 100%;
+    background-color: white; /* Ensure background color is white */
+  }
+  
+  /* Ensure the root div takes up full height */
+  #root {
+    height: 100%;
+  }
+  
+  /* Adjust the login container style */
+  .login {
+    margin: 50px auto; /* Center the container horizontally */
+    padding: 20px; /* Add some padding for better spacing */
+    background-color: white; /* Background color for the login container */
+    border-radius: 8px; /* Optional: Add border radius for rounded corners */
+    border: 2px solid #ddd; /* Optional: Add a border for better visual separation */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional: Add a shadow for depth */
+  }
