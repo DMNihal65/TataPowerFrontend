@@ -1,44 +1,44 @@
 import React from 'react';
-import { Box, Flex, Input, IconButton, Avatar, Menu, MenuButton, MenuList, MenuItem } from '@chakra-ui/react';
-import { SearchIcon, BellIcon } from 'lucide-react';
+import { Layout, Input, Avatar, Menu, Dropdown, Button } from 'antd';
+import { SearchOutlined, BellOutlined, UserOutlined, MenuOutlined } from '@ant-design/icons';
 
-const Header = () => {
+const { Header } = Layout;
+const { Search } = Input;
+
+const UserMenu = (
+  <Menu>
+    <Menu.Item key="profile">Profile</Menu.Item>
+    <Menu.Item key="settings">Settings</Menu.Item>
+    <Menu.Item key="logout">Logout</Menu.Item>
+  </Menu>
+);
+
+const HeaderComponent = ({ onMenuClick }) => {
   return (
-    <Box as="header" bg="white" px={4} py={2} shadow="md">
-      <Flex alignItems="center" justifyContent="space-between">
-        <Flex alignItems="center" flex={1} mx={8} justifyContent="center">
-          <Input 
-            placeholder="Search..." 
-            size="md" 
-            maxW="400px"
-            mr={2}
+    <Header style={{ background: '#fff', padding: 0, boxShadow: '0 1px 4px rgba(0,21,41,.08)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%', padding: '0 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Button
+            type="text"
+            icon={<MenuOutlined />}
+            onClick={onMenuClick}
+            style={{ fontSize: '16px', width: 64, height: 64 }}
           />
-          <IconButton
-            aria-label="Search"
-            icon={<SearchIcon />}
-            size="md"
+          <Search
+            placeholder="Search..."
+            onSearch={value => console.log(value)}
+            style={{ width: 200, marginLeft: 24 }}
           />
-        </Flex>
-        
-        <Flex alignItems="center">
-          <IconButton
-            aria-label="Notifications"
-            icon={<BellIcon />}
-            variant="ghost"
-            mr={2}
-          />
-          <Menu>
-            <MenuButton as={Avatar} size="sm" cursor="pointer" />
-            <MenuList>
-              <MenuItem>Profile</MenuItem>
-              <MenuItem>Settings</MenuItem>
-              <MenuItem>Logout</MenuItem>
-            </MenuList>
-          </Menu>
-        </Flex>
-      </Flex>
-    </Box>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Button type="text" icon={<BellOutlined />} style={{ marginRight: 24 }} />
+          <Dropdown overlay={UserMenu} placement="bottomRight" arrow>
+            <Avatar icon={<UserOutlined />} style={{ cursor: 'pointer' }} />
+          </Dropdown>
+        </div>
+      </div>
+    </Header>
   );
 };
 
-export default Header;
+export default HeaderComponent;
