@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Tree, Input, Button, Upload, Select, Table, Modal, message, Switch, Form, Layout, Card, Tabs } from 'antd';
-import { DownOutlined, FolderOutlined, FileOutlined, PlusOutlined, EditOutlined, UploadOutlined } from '@ant-design/icons';
+import { Tree, Input, Button, Upload, Select, Table, Modal, message, Switch, Form, Layout, Card, Tabs, Tag } from 'antd';
+import { DownOutlined, FolderOutlined, FileOutlined, PlusOutlined, EditOutlined, UploadOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
 const { TreeNode } = Tree;
@@ -14,7 +14,7 @@ const EnhancedDocumentUpload = () => {
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [fileList, setFileList] = useState([]);
   const [partNumbers, setPartNumbers] = useState([]);
-  const [customPartNumbers, setCustomPartNumbers] = useState('');
+  const [customPartNumbers, setCustomPartNumbers] = useState([]);
   const [partNumberRange, setPartNumberRange] = useState({ start: '', end: '' });
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isNewFolderModalVisible, setIsNewFolderModalVisible] = useState(false);
@@ -23,6 +23,9 @@ const EnhancedDocumentUpload = () => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
   const [collapsed, setCollapsed] = useState(false);
+  const [searchPartNumber, setSearchPartNumber] = useState('');
+
+
 
   useEffect(() => {
     fetchFolders();
@@ -94,17 +97,17 @@ const EnhancedDocumentUpload = () => {
     setFileList(info.fileList);
   };
 
-  const handlePartNumberSelect = (value) => {
-    setPartNumbers(value);
-  };
+  // const handlePartNumberSelect = (value) => {
+  //   setPartNumbers(value);
+  // };
 
   const handleCustomPartNumberChange = (e) => {
     setCustomPartNumbers(e.target.value);
   };
 
-  const handlePartNumberRangeChange = (type, value) => {
-    setPartNumberRange(prev => ({ ...prev, [type]: value }));
-  };
+  // const handlePartNumberRangeChange = (type, value) => {
+  //   setPartNumberRange(prev => ({ ...prev, [type]: value }));
+  // };
 
   const handleEditFolder = async (values) => {
     try {
@@ -142,25 +145,25 @@ const EnhancedDocumentUpload = () => {
     }
   };
 
-  const handleSubmit = () => {
-    if (!selectedFolder || fileList.length === 0 || (partNumbers.length === 0 && !customPartNumbers && !partNumberRange.start)) {
-      message.error('Please select a folder, upload files, and specify at least one part number');
-      return;
-    }
+  // const handleSubmit = () => {
+  //   if (!selectedFolder || fileList.length === 0 || (partNumbers.length === 0 && !customPartNumbers && !partNumberRange.start)) {
+  //     message.error('Please select a folder, upload files, and specify at least one part number');
+  //     return;
+  //   }
 
-    const summary = fileList.map(file => ({
-      fileName: file.name,
-      folder: selectedFolder.name,
-      partNumbers: [
-        ...partNumbers,
-        ...customPartNumbers.split(',').map(pn => pn.trim()),
-        ...generatePartNumberRange(partNumberRange.start, partNumberRange.end)
-      ]
-    }));
+  //   const summary = fileList.map(file => ({
+  //     fileName: file.name,
+  //     folder: selectedFolder.name,
+  //     partNumbers: [
+  //       ...partNumbers,
+  //       ...customPartNumbers.split(',').map(pn => pn.trim()),
+  //       ...generatePartNumberRange(partNumberRange.start, partNumberRange.end)
+  //     ]
+  //   }));
 
-    setUploadSummary(summary);
-    console.log('Upload summary:', summary);
-  };
+  //   setUploadSummary(summary);
+  //   console.log('Upload summary:', summary);
+  // };
 
   const generatePartNumberRange = (start, end) => {
     if (!start || !end) return [];
@@ -186,6 +189,49 @@ const EnhancedDocumentUpload = () => {
       reader.onerror = error => reject(error);
     });
   };
+
+
+
+  const handlePartNumberSelect = (value) => {
+    setPartNumbers(value);
+  };
+
+  const handleCustomPartNumberAdd = (value) => {
+    if (value && !customPartNumbers.includes(value)) {
+      setCustomPartNumbers([...customPartNumbers, value]);
+    }
+  };
+
+  const handleCustomPartNumberRemove = (removedTag) => {
+    const newTags = customPartNumbers.filter(tag => tag !== removedTag);
+    setCustomPartNumbers(newTags);
+  };
+
+  const handlePartNumberRangeChange = (type, value) => {
+    setPartNumberRange(prev => ({ ...prev, [type]: value }));
+  };
+
+  const handleSubmit = () => {
+    if (!selectedFolder || fileList.length === 0 || (partNumbers.length === 0 && customPartNumbers.length === 0 && !partNumberRange.start)) {
+      message.error('Please select a folder, upload files, and specify at least one part number');
+      return;
+    }
+
+    const summary = fileList.map(file => ({
+      fileName: file.name,
+      folder: selectedFolder.name,
+      partNumbers: [
+        ...partNumbers,
+        ...customPartNumbers,
+        ...generatePartNumberRange(partNumberRange.start, partNumberRange.end)
+      ]
+    }));
+
+    setUploadSummary(summary);
+    console.log('Upload summary:', summary);
+  };
+
+  
 
   return (
     <Layout className="min-h-screen bg-white" theme="light">
@@ -236,36 +282,42 @@ const EnhancedDocumentUpload = () => {
               </TabPane>
               <TabPane tab="Part Numbers" key="2">
                 <Form layout="vertical">
-                  <Form.Item label="Select Existing Part Numbers">
+                  <Form.Item label="Search and Select Existing Part Numbers">
                     <Select
                       mode="multiple"
                       style={{ width: '100%' }}
-                      placeholder="Select existing part numbers"
+                      placeholder="Search and select existing part numbers"
                       onChange={handlePartNumberSelect}
                       value={partNumbers}
+                      filterOption={(input, option) =>
+                        option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                      }
+                      showSearch
                     >
                       <Option value="PN001">PN001</Option>
                       <Option value="PN002">PN002</Option>
                       <Option value="PN003">PN003</Option>
-                    </Select>
-                  </Form.Item>
+                     </Select>
+                     </Form.Item>
                   <Form.Item label="Custom Part Numbers">
-                    <Input 
-                      placeholder="Enter custom part numbers (comma-separated)" 
+                    <Select
+                      mode="tags"
+                      style={{ width: '100%' }}
+                      placeholder="Enter custom part numbers"
+                      onChange={setCustomPartNumbers}
                       value={customPartNumbers}
-                      onChange={handleCustomPartNumberChange}
                     />
                   </Form.Item>
                   <Form.Item label="Part Number Range">
                     <Input.Group compact>
                       <Input 
-                        style={{ width: '50%' }}
+                        style={{ width: 'calc(50% - 15px)', marginRight: '15px' }}
                         placeholder="Start of range" 
                         value={partNumberRange.start}
                         onChange={(e) => handlePartNumberRangeChange('start', e.target.value)}
                       />
                       <Input 
-                        style={{ width: '50%' }}
+                        style={{ width: 'calc(50% - 15px)' }}
                         placeholder="End of range" 
                         value={partNumberRange.end}
                         onChange={(e) => handlePartNumberRangeChange('end', e.target.value)}
@@ -287,8 +339,19 @@ const EnhancedDocumentUpload = () => {
               columns={[
                 { title: 'File Name', dataIndex: 'fileName', key: 'fileName' },
                 { title: 'Folder', dataIndex: 'folder', key: 'folder' },
-                { title: 'Part Numbers', dataIndex: 'partNumbers', key: 'partNumbers', 
-                  render: partNumbers => partNumbers.join(', ') 
+                { 
+                  title: 'Part Numbers', 
+                  dataIndex: 'partNumbers', 
+                  key: 'partNumbers', 
+                  render: partNumbers => (
+                    <>
+                      {partNumbers.map(pn => (
+                        <Tag key={pn} className="mb-1">
+                          {pn}
+                        </Tag>
+                      ))}
+                    </>
+                  )
                 },
               ]}
               scroll={{ x: true }}
