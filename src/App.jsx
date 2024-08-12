@@ -11,6 +11,7 @@ import PartNumberManagement from './pages/PartNumberManagement';
 import DocumentUpload from './pages/DocumentUpload';
 import DocumentApproval from './pages/DocumentApproval';
 import Notifications from './pages/Notifications';
+import FolderMaster from './pages/FolderMaster';
 
 // Layout components
 import Header from './components/Header';
@@ -59,6 +60,8 @@ const App = () => {
                   <Route path="/document-upload" element={<DocumentUpload />} />
                   <Route path="/document-approval" element={<DocumentApproval />} />
                   <Route path="/notifications" element={<Notifications />} />
+                  <Route path="/folder-master" element={<FolderMaster />} />
+
                 </Routes>
               </MainLayout>
             }

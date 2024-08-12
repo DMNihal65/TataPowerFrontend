@@ -1,35 +1,51 @@
-import React, { useState } from 'react';
-import { Input, Table, Button, Switch, Card, Typography, Row, Col, Modal, Form, Input as AntInput, DatePicker, Checkbox, message } from 'antd';
+
+import React, { useEffect, useState } from 'react';
+import { Input, Table, Button, Switch, Card, Typography, Row, Col } from 'antd';
+import {  Modal, Form, Input as AntInput, DatePicker, Checkbox, message } from 'antd';
+
 import { PlusOutlined } from '@ant-design/icons';
 import 'antd/dist/reset.css'; // Import Ant Design styles
-import axios from 'axios'; // Import Axios for HTTP requests
+import axios from 'axios';
 
 const { Title } = Typography;
 
 const PartNumberManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [partNumbers, setPartNumbers] = useState([
-    { id: 1, number: 'PN001', status: 'Active', documentsComplete: true },
-    { id: 2, number: 'PN002', status: 'Inactive', documentsComplete: false },
-    // Add more mock data as needed
-  ]);
+  const [partNumbers, setPartNumbers] = useState([]);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
+
+  useEffect(() => {
+    const fetchPartNumbers = async () => {
+      try {
+        const response = await axios.get('http://172.18.100.54:7000/getallpartnumbers/');
+        setPartNumbers(response.data);
+      } catch (error) {
+        console.error('Failed to fetch part numbers:', error);
+      }
+    };
+
+    fetchPartNumbers();
+  }, []);
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
   };
 
   const filteredPartNumbers = partNumbers.filter(part =>
-    part.number.toLowerCase().includes(searchTerm.toLowerCase())
+    part.part_number && part.part_number.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const toggleStatus = (id) => {
     setPartNumbers(partNumbers.map(part =>
-      part.id === id ? { ...part, status: part.status === 'Active' ? 'Inactive' : 'Active' } : part
+      part.id === id ? { ...part, is_active: !part.is_active } : part
     ));
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString();
   };
 
   const showModal = () => {
@@ -72,61 +88,64 @@ const PartNumberManagement = () => {
     setIsModalVisible(false);
   };
 
+
   const columns = [
     {
       title: 'Part Number',
-      dataIndex: 'number',
-      key: 'number',
-      sorter: (a, b) => a.number.localeCompare(b.number),
+      dataIndex: 'part_number',
+      key: 'part_number',
+      sorter: (a, b) => a.part_number.localeCompare(b.part_number),
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      filters: [
-        { text: 'Active', value: 'Active' },
-        { text: 'Inactive', value: 'Inactive' },
-      ],
-      onFilter: (value, record) => record.status === value,
-      render: status => (
-        <span style={{ color: status === 'Active' ? 'green' : 'red' }}>
-          {status}
-        </span>
-      ),
-    },
-    {
-      title: 'Documents Complete',
-      dataIndex: 'documentsComplete',
-      key: 'documentsComplete',
-      render: (text, record) => (record.documentsComplete ? 'Yes' : 'No'),
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
       align: 'center',
       responsive: ['md'], // Only show this column on medium screens and above
     },
     {
-      title: 'Actions',
-      key: 'actions',
-      render: (text, record) => (
-        <Switch
-          checked={record.status === 'Active'}
-          onChange={() => toggleStatus(record.id)}
-        />
+      title: 'Status',
+      dataIndex: 'is_active',
+      key: 'is_active',
+      filters: [
+        { text: 'Active', value: true },
+        { text: 'Inactive', value: false },
+      ],
+      onFilter: (value, record) => record.is_active === value,
+      render: isActive => (
+        <span style={{ color: isActive ? 'green' : 'red' }}>
+          {isActive ? 'Active' : 'Inactive'}
+        </span>
       ),
-      align: 'center',
     },
+    {
+      title: 'Inactive Date',
+      dataIndex: 'inactive_date',
+      key: 'inactive_date',
+      align: 'center',
+      render: (date) => formatDate(date)
+    },
+    {
+      title: 'Created At',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      align: 'center',
+      render: (date) => formatDate(date)
+    },
+    {
+      title: 'Updated At',
+      dataIndex: 'updated_at',
+      key: 'updated_at',
+      align: 'center',
+      render: (date) => formatDate(date)
+    }
   ];
 
   return (
-    <Card style={{ margin: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+    <Card style={{ margin: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' , padding:'0' }}>
       <Title
         level={3}
-        style={{
-          marginBottom: '24px',
-          textAlign: 'center',
-          whiteSpace: 'nowrap', // Prevent text from wrapping
-          overflow: 'hidden', // Ensure no overflow on small screens
-          textOverflow: 'ellipsis', // Show ellipsis if text is too long
-          fontSize: '24px', // Adjust font size for better readability
-        }}
+        className="mb-6 text-center text-2xl sm:text-3xl lg:text-4xl font-semibold"
       >
         Part Number Management
       </Title>
@@ -139,8 +158,8 @@ const PartNumberManagement = () => {
             allowClear
           />
         </Col>
-        <Col xs={24} sm={8} md={6} style={{ textAlign: 'right' }}>
-          <Button type="primary" icon={<PlusOutlined />} block onClick={showModal}>
+        <Col xs={24} sm={8} md={6} className="text-right">
+        <Button type="primary" icon={<PlusOutlined />} block onClick={showModal}>
             Add New Part Number
           </Button>
         </Col>
@@ -151,10 +170,9 @@ const PartNumberManagement = () => {
         rowKey="id"
         pagination={{ pageSize: 5 }}
         scroll={{ x: '100%' }} // Make the table horizontally scrollable on small screens
-        style={{ marginTop: '16px' }}
+        className="mt-4 p-0"
       />
-
-      <Modal
+       <Modal
         title="Add New Part Number"
         visible={isModalVisible}
         onOk={handleOk}

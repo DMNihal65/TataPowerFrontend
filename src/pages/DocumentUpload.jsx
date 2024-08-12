@@ -1,247 +1,368 @@
-import React, { useState } from 'react';
-import { Table, Button, Input, Select, message, Upload } from 'antd';
-import { InboxOutlined, SearchOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Tree, Input, Button, Upload, Select, Table, Modal, message, Switch, Form, Layout, Card, Tabs } from 'antd';
+import { DownOutlined, FolderOutlined, FileOutlined, PlusOutlined, EditOutlined, UploadOutlined } from '@ant-design/icons';
+import axios from 'axios';
 
+const { TreeNode } = Tree;
 const { Dragger } = Upload;
 const { Option } = Select;
+const { Content, Sider } = Layout;
+const { TabPane } = Tabs;
 
-const DocumentUpload = () => {
+const EnhancedDocumentUpload = () => {
+  const [folders, setFolders] = useState([]);
+  const [selectedFolder, setSelectedFolder] = useState(null);
   const [fileList, setFileList] = useState([]);
-  const [documentType, setDocumentType] = useState('');
   const [partNumbers, setPartNumbers] = useState([]);
-  const [searchText, setSearchText] = useState('');
-  const [filteredDocuments, setFilteredDocuments] = useState([]);
-  const [partNumberRange, setPartNumberRange] = useState({
-    start: '',
-    end: ''
-  });
+  const [customPartNumbers, setCustomPartNumbers] = useState('');
+  const [partNumberRange, setPartNumberRange] = useState({ start: '', end: '' });
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isNewFolderModalVisible, setIsNewFolderModalVisible] = useState(false);
+  const [editingFolder, setEditingFolder] = useState(null);
+  const [uploadSummary, setUploadSummary] = useState([]);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState('');
+  const [collapsed, setCollapsed] = useState(false);
 
-  const existingDocuments = [
-    { key: '1', documentName: 'Certificate PN001', type: 'Certificate', partNumber: 'PN001', uploadDate: '2024-08-01', version: '1.0' },
-    { key: '2', documentName: 'Test Report PN002', type: 'Test Report', partNumber: 'PN002', uploadDate: '2024-08-02', version: '1.1' },
-    { key: '3', documentName: 'Installation Manual PN010', type: 'Installation Manual', partNumber: 'PN010', uploadDate: '2024-08-03', version: '1.2' },
-  ];
+  useEffect(() => {
+    fetchFolders();
+  }, []);
 
-  const handleSearch = (value) => {
-    setSearchText(value);
-    const filtered = existingDocuments.filter(doc =>
-      doc.documentName.toLowerCase().includes(value.toLowerCase())
-    );
-    setFilteredDocuments(filtered);
+  const fetchFolders = async () => {
+    try {
+      const response = await axios.get('http://172.18.100.54:7000/getallfolders/');
+      const organizedFolders = organizefolders(response.data);
+      setFolders(organizedFolders);
+    } catch (error) {
+      console.error('Error fetching folders:', error);
+      message.error('Failed to fetch folders');
+    }
   };
 
-  const handleReset = () => {
-    setSearchText('');
-    setFilteredDocuments(existingDocuments);
+  const organizefolders = (flatFolders) => {
+    const folderMap = {};
+    const rootFolders = [];
+
+    flatFolders.forEach(folder => {
+      folderMap[folder.id] = { ...folder, children: [] };
+    });
+
+    flatFolders.forEach(folder => {
+      if (folder.parent_id === null) {
+        rootFolders.push(folderMap[folder.id]);
+      } else {
+        folderMap[folder.parent_id].children.push(folderMap[folder.id]);
+      }
+    });
+
+    return rootFolders;
   };
 
-  const handlePartNumberRangeChange = (field, value) => {
-    setPartNumberRange(prevRange => ({
-      ...prevRange,
-      [field]: value
-    }));
+  const renderTreeNodes = (data) => 
+    data.map((item) => (
+      <TreeNode 
+        key={item.id} 
+        title={
+          <span className="flex items-center justify-between">
+            <span className="truncate mr-2">{item.name}</span>
+            <span className="flex items-center">
+              {item.requires_validity && <span className="mr-1 text-blue-500 text-xs">RV</span>}
+              {item.is_mandatory && <span className="mr-1 text-red-500 text-xs">M</span>}
+              <Button 
+                type="link" 
+                icon={<EditOutlined />} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingFolder(item);
+                  setIsEditModalVisible(true);
+                }}
+              />
+            </span>
+          </span>
+        } 
+        icon={<FolderOutlined />}
+      >
+        {item.children && renderTreeNodes(item.children)}
+      </TreeNode>
+    ));
+
+  const handleFolderSelect = (selectedKeys, info) => {
+    setSelectedFolder(info.node);
   };
 
-  const filterByPartNumberRange = (value, record) => {
-    const { start, end } = partNumberRange;
-    if (!start && !end) return true;
-    const partNumber = record.partNumber;
-    return (!start || partNumber >= start) && (!end || partNumber <= end);
+  const handleFileUpload = (info) => {
+    setFileList(info.fileList);
   };
 
-  const columns = [
-    {
-      title: 'Document Name',
-      dataIndex: 'documentName',
-      key: 'documentName',
-      sorter: (a, b) => a.documentName.localeCompare(b.documentName),
-      filterDropdown: () => (
-        <div style={{ padding: 8 }}>
-          <Input
-            placeholder="Search document name"
-            value={searchText}
-            onChange={(e) => handleSearch(e.target.value)}
-            style={{ width: '100%', marginBottom: 8 }}
-          />
-          <Button
-            type="primary"
-            onClick={() => handleSearch(searchText)}
-            style={{ marginRight: 8 }}
-          >
-            Search
-          </Button>
-          <Button
-            onClick={handleReset}
-          >
-            Reset
-          </Button>
-        </div>
-      ),
-      filterIcon: () => <SearchOutlined />,
-      onFilter: (value, record) => record.documentName.toLowerCase().includes(value.toLowerCase()),
-    },
-    {
-      title: 'Part Number',
-      dataIndex: 'partNumber',
-      key: 'partNumber',
-      filterDropdown: () => (
-        <div style={{ padding: 8 }}>
-          <Input
-            placeholder="Start Part Number"
-            value={partNumberRange.start}
-            onChange={(e) => handlePartNumberRangeChange('start', e.target.value)}
-            style={{ width: '100%', marginBottom: 8 }}
-          />
-          <Input
-            placeholder="End Part Number"
-            value={partNumberRange.end}
-            onChange={(e) => handlePartNumberRangeChange('end', e.target.value)}
-            style={{ width: '100%', marginBottom: 8 }}
-          />
-          <Button
-            type="primary"
-            onClick={() => {
-              setFilteredDocuments(existingDocuments.filter(doc => filterByPartNumberRange(null, doc)));
-            }}
-            style={{ marginRight: 8 }}
-          >
-            Filter
-          </Button>
-          <Button
-            onClick={() => {
-              setPartNumberRange({ start: '', end: '' });
-              setFilteredDocuments(existingDocuments);
-            }}
-          >
-            Reset
-          </Button>
-        </div>
-      ),
-      filterIcon: () => <SearchOutlined />,
-      onFilter: filterByPartNumberRange,
-    },
-    {
-      title: 'Type',
-      dataIndex: 'type',
-      key: 'type',
-      filters: [
-        { text: 'Certificate', value: 'Certificate' },
-        { text: 'Test Report', value: 'Test Report' },
-        { text: 'Installation Manual', value: 'Installation Manual' },
-      ],
-      onFilter: (value, record) => record.type === value,
-    },
-    {
-      title: 'Upload Date',
-      dataIndex: 'uploadDate',
-      key: 'uploadDate',
-      sorter: (a, b) => new Date(a.uploadDate) - new Date(b.uploadDate),
-    },
-    {
-      title: 'Version',
-      dataIndex: 'version',
-      key: 'version',
-    },
-  ];
+  const handlePartNumberSelect = (value) => {
+    setPartNumbers(value);
+  };
 
-  const handleUpload = () => {
-    if (fileList.length === 0 || !documentType || partNumbers.length === 0) {
-      message.error('Please fill in all required fields');
+  const handleCustomPartNumberChange = (e) => {
+    setCustomPartNumbers(e.target.value);
+  };
+
+  const handlePartNumberRangeChange = (type, value) => {
+    setPartNumberRange(prev => ({ ...prev, [type]: value }));
+  };
+
+  const handleEditFolder = async (values) => {
+    try {
+      await axios.put(`http://172.18.100.54:7000/foldersupdate/folder_name?folder_name=${editingFolder.name}`, {
+        name: values.name,
+        description: values.description,
+        requires_validity: values.requires_validity,
+        is_mandatory: values.is_mandatory,
+        parent_id: editingFolder.parent_id
+      });
+      message.success('Folder updated successfully');
+      setIsEditModalVisible(false);
+      fetchFolders();
+    } catch (error) {
+      console.error('Error updating folder:', error);
+      message.error('Failed to update folder');
+    }
+  };
+
+  const handleAddFolder = async (values) => {
+    try {
+      await axios.post('http://172.18.100.54:7000/folders/', {
+        name: values.name,
+        description: values.description,
+        requires_validity: values.requires_validity,
+        is_mandatory: values.is_mandatory,
+        parent_id: selectedFolder ? selectedFolder.id : null
+      });
+      message.success('New folder added successfully');
+      setIsNewFolderModalVisible(false);
+      fetchFolders();
+    } catch (error) {
+      console.error('Error adding new folder:', error);
+      message.error('Failed to add new folder');
+    }
+  };
+
+  const handleSubmit = () => {
+    if (!selectedFolder || fileList.length === 0 || (partNumbers.length === 0 && !customPartNumbers && !partNumberRange.start)) {
+      message.error('Please select a folder, upload files, and specify at least one part number');
       return;
     }
-    message.success('Document uploaded successfully');
-    setFileList([]);
-    setDocumentType('');
-    setPartNumbers([]);
+
+    const summary = fileList.map(file => ({
+      fileName: file.name,
+      folder: selectedFolder.name,
+      partNumbers: [
+        ...partNumbers,
+        ...customPartNumbers.split(',').map(pn => pn.trim()),
+        ...generatePartNumberRange(partNumberRange.start, partNumberRange.end)
+      ]
+    }));
+
+    setUploadSummary(summary);
+    console.log('Upload summary:', summary);
   };
 
-  const props = {
-    onRemove: (file) => {
-      const index = fileList.indexOf(file);
-      const newFileList = fileList.slice();
-      newFileList.splice(index, 1);
-      setFileList(newFileList);
-    },
-    beforeUpload: (file) => {
-      setFileList([...fileList, file]);
-      return false;
-    },
-    fileList,
+  const generatePartNumberRange = (start, end) => {
+    if (!start || !end) return [];
+    const startNum = parseInt(start.replace(/\D/g, ''));
+    const endNum = parseInt(end.replace(/\D/g, ''));
+    const prefix = start.replace(/\d/g, '');
+    return Array.from({ length: endNum - startNum + 1 }, (_, i) => `${prefix}${startNum + i}`);
+  };
+
+  const handlePreview = async (file) => {
+    if (!file.url && !file.preview) {
+      file.preview = await getBase64(file.originFileObj);
+    }
+    setPreviewImage(file.url || file.preview);
+    setPreviewVisible(true);
+  };
+
+  const getBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
   };
 
   return (
-    <div className="p-4 md:p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-2xl md:text-3xl font-bold mb-4">Document Upload</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg shadow-md p-4 md:p-6 h-full overflow-y-auto max-h-screen">
-          <h2 className="text-lg md:text-xl font-semibold mb-4">Upload New Document</h2>
-          <form>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Document Type</label>
-              <Select
-                style={{ width: '100%' }}
-                placeholder="Select document type"
-                onChange={(value) => setDocumentType(value)}
-                value={documentType}
-              >
-                <Option value="certificate">Certificate</Option>
-                <Option value="testReport">Test Report</Option>
-                <Option value="installationManual">Installation Manual</Option>
-              </Select>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Part Numbers</label>
-              <Select
-                mode="multiple"
-                style={{ width: '100%' }}
-                placeholder="Select part numbers"
-                onChange={(values) => setPartNumbers(values)}
-                value={partNumbers}
-              >
-                <Option value="PN001">PN001</Option>
-                <Option value="PN002">PN002</Option>
-                <Option value="PN003">PN003</Option>
-              </Select>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Upload Document</label>
-              <Dragger {...props}>
-                <p className="ant-upload-drag-icon">
-                  <InboxOutlined />
-                </p>
-                <p className="ant-upload-text">Click or drag file to this area to upload</p>
-                <p className="ant-upload-hint">
-                  Support for a single or bulk upload. Strictly prohibit from uploading company data or other
-                  sensitive files.
-                </p>
-              </Dragger>
-            </div>
-            <div className="flex justify-end">
-              <Button 
-                type="primary" 
-                onClick={handleUpload} 
-                className="w-full md:w-auto"
-              >
-                Upload
-              </Button>
-            </div>
-          </form>
+    <Layout className="min-h-screen bg-white" theme="light">
+      <Sider 
+        collapsible 
+        collapsed={collapsed} 
+        onCollapse={setCollapsed}
+        className="bg-white"
+        width={300}
+        theme="light"
+      >
+        <div className="p-4">
+          <h2 className="text-lg font-semibold mb-4">Folder Explorer</h2>
+          <Tree
+            showIcon
+            defaultExpandAll
+            onSelect={handleFolderSelect}
+            switcherIcon={<DownOutlined />}
+          >
+            {renderTreeNodes(folders)}
+          </Tree>
+          <Button 
+            icon={<PlusOutlined />} 
+            onClick={() => setIsNewFolderModalVisible(true)}
+            className="mt-4 w-full"
+          >
+            {collapsed ? '' : 'Add New Folder'}
+          </Button>
         </div>
-        
-        <div className="bg-white rounded-lg shadow-md p-4 md:p-6 h-full overflow-y-auto max-h-screen">
-          <h2 className="text-lg md:text-xl font-semibold mb-4">Existing Documents</h2>
-          <Table 
-            columns={columns} 
-            dataSource={filteredDocuments.length > 0 ? filteredDocuments : existingDocuments} 
-            rowKey="key" 
-            pagination={{ pageSize: 5 }}
-            className="w-full"
-          />
-        </div>
-      </div>
-    </div>
+      </Sider>
+      <Layout className="site-layout">
+        <Content className="p-6">
+          <Card className="mb-6">
+            <h1 className="text-2xl font-bold mb-4">Document Upload</h1>
+            <Tabs defaultActiveKey="1">
+              <TabPane tab="Upload Files" key="1">
+                <Dragger 
+                  multiple
+                  onChange={handleFileUpload}
+                  fileList={fileList}
+                  onPreview={handlePreview}
+                >
+                  <p className="ant-upload-drag-icon">
+                    <UploadOutlined />
+                  </p>
+                  <p className="ant-upload-text">Click or drag file to this area to upload</p>
+                </Dragger>
+              </TabPane>
+              <TabPane tab="Part Numbers" key="2">
+                <Form layout="vertical">
+                  <Form.Item label="Select Existing Part Numbers">
+                    <Select
+                      mode="multiple"
+                      style={{ width: '100%' }}
+                      placeholder="Select existing part numbers"
+                      onChange={handlePartNumberSelect}
+                      value={partNumbers}
+                    >
+                      <Option value="PN001">PN001</Option>
+                      <Option value="PN002">PN002</Option>
+                      <Option value="PN003">PN003</Option>
+                    </Select>
+                  </Form.Item>
+                  <Form.Item label="Custom Part Numbers">
+                    <Input 
+                      placeholder="Enter custom part numbers (comma-separated)" 
+                      value={customPartNumbers}
+                      onChange={handleCustomPartNumberChange}
+                    />
+                  </Form.Item>
+                  <Form.Item label="Part Number Range">
+                    <Input.Group compact>
+                      <Input 
+                        style={{ width: '50%' }}
+                        placeholder="Start of range" 
+                        value={partNumberRange.start}
+                        onChange={(e) => handlePartNumberRangeChange('start', e.target.value)}
+                      />
+                      <Input 
+                        style={{ width: '50%' }}
+                        placeholder="End of range" 
+                        value={partNumberRange.end}
+                        onChange={(e) => handlePartNumberRangeChange('end', e.target.value)}
+                      />
+                    </Input.Group>
+                  </Form.Item>
+                </Form>
+              </TabPane>
+            </Tabs>
+            <Button type="primary" onClick={handleSubmit} className="mt-4">
+              Submit Upload
+            </Button>
+          </Card>
+
+          <Card>
+            <h2 className="text-xl font-semibold mb-4">Upload Summary</h2>
+            <Table 
+              dataSource={uploadSummary}
+              columns={[
+                { title: 'File Name', dataIndex: 'fileName', key: 'fileName' },
+                { title: 'Folder', dataIndex: 'folder', key: 'folder' },
+                { title: 'Part Numbers', dataIndex: 'partNumbers', key: 'partNumbers', 
+                  render: partNumbers => partNumbers.join(', ') 
+                },
+              ]}
+              scroll={{ x: true }}
+            />
+          </Card>
+        </Content>
+      </Layout>
+
+      <Modal
+        visible={isEditModalVisible}
+        title="Edit Folder"
+        onCancel={() => setIsEditModalVisible(false)}
+        footer={null}
+      >
+        <Form 
+          initialValues={editingFolder} 
+          onFinish={handleEditFolder}
+        >
+          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="description" label="Description">
+            <Input.TextArea />
+          </Form.Item>
+          <Form.Item name="requires_validity" label="Requires Validity" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item name="is_mandatory" label="Is Mandatory" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              Update Folder
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        visible={isNewFolderModalVisible}
+        title="Add New Folder"
+        onCancel={() => setIsNewFolderModalVisible(false)}
+        footer={null}
+      >
+        <Form onFinish={handleAddFolder}>
+          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="description" label="Description">
+            <Input.TextArea />
+          </Form.Item>
+          <Form.Item name="requires_validity" label="Requires Validity" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item name="is_mandatory" label="Is Mandatory" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              Add Folder
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        visible={previewVisible}
+        footer={null}
+        onCancel={() => setPreviewVisible(false)}
+      >
+        <img alt="preview" style={{ width: '100%' }} src={previewImage} />
+      </Modal>
+    </Layout>
   );
 };
 
-export default DocumentUpload;
+export default EnhancedDocumentUpload;
