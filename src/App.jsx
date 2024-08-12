@@ -15,6 +15,7 @@ import Notifications from './pages/Notifications';
 // Layout components
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
+import FolderMaster from './pages/FolderMaster';
 
 const { Content } = Layout;
 
@@ -59,6 +60,7 @@ const App = () => {
                   <Route path="/document-upload" element={<DocumentUpload />} />
                   <Route path="/document-approval" element={<DocumentApproval />} />
                   <Route path="/notifications" element={<Notifications />} />
+                  <Route path="/folder-master" element={<FolderMaster />} />
                 </Routes>
               </MainLayout>
             }
