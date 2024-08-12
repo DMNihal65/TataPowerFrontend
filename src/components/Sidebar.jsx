@@ -1,76 +1,82 @@
-import React, { useState } from 'react';
-import { Box, VStack, IconButton, Text } from '@chakra-ui/react';
-import { Link } from 'react-router-dom';
-import { Home, Package, FileUp, CheckSquare, Bell, Menu } from 'lucide-react';
-import { Flex, Spacer } from '@chakra-ui/react'
+import React from 'react';
+import { Layout, Menu } from 'antd';
+import { Link, useLocation } from 'react-router-dom';
+import { Home, Package, FileUp, CheckSquare, Bell, X } from 'lucide-react';
+import logo from '../assets/tatapower.svg';
 
-const NavItem = ({ icon, children, to }) => (
-  <Link to={to}>
-    <Flex
-      align="center"
-      p="4"
-      mx="4"
-      borderRadius="lg"
-      role="group"
-      cursor="pointer"
-      _hover={{
-        bg: 'cyan.400',
-        color: 'white',
-      }}
-    >
-      {icon}
-      <Text ml="4">{children}</Text>
-    </Flex>
-  </Link>
-);
+const { Sider } = Layout;
 
-const Sidebar = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+const Sidebar = ({ isOpen, onClose }) => {
+  const location = useLocation();
+
+  const menuItems = [
+    { key: '/dashboard', icon: <Home size={18} />, label: 'Dashboard' },
+    { key: '/part-numbers', icon: <Package size={18} />, label: 'Part Numbers' },
+    { key: '/document-upload', icon: <FileUp size={18} />, label: 'Document Upload' },
+    { key: '/document-approval', icon: <CheckSquare size={18} />, label: 'Document Approval' },
+    { key: '/notifications', icon: <Bell size={18} />, label: 'Notifications' },
+  ];
 
   return (
-    <Box
-      as="nav"
-      pos="fixed"
-      top="0"
-      left="0"
-      zIndex="sticky"
-      h="full"
-      pb="10"
-      overflowX="hidden"
-      overflowY="auto"
-      bg="white"
-      borderRight="1px"
-      borderRightColor="gray.200"
-      w={isCollapsed ? "60px" : "240px"}
-      transition="width 0.2s"
+    <Sider
+      className="rounded-lg shadow-lg"
+      breakpoint="lg"
+      collapsedWidth="0"
+      onBreakpoint={(broken) => {
+        if (!broken) onClose();
+      }}
+      trigger={null}
+      collapsible
+      collapsed={!isOpen}
+      style={{
+        overflow: 'auto',
+        height: '100vh',
+        position: 'fixed',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        backgroundColor: '#ffffff',
+      }}
     >
-      <Flex px="4" py="5" align="center" justify="space-between">
-        {!isCollapsed && <Text fontSize="2xl" fontWeight="bold">Tata Power</Text>}
-        <IconButton
-          aria-label="Menu Collapse"
-          icon={<Menu />}
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          variant="outline"
+      <div
+        className="logo"
+        style={{
+          height: isOpen ? '80px' : '64px', // Adjust height when sidebar is collapsed or open
+          margin: '16px',
+          textAlign: 'center',
+        }}
+      >
+        <img
+          src={logo}
+          alt="Logo"
+          style={{
+            height: '100%',
+            maxWidth: '100%',
+            objectFit: 'contain', // Ensure the logo fits within the container
+          }}
         />
-      </Flex>
-      <VStack spacing={4} align="stretch" mt={8}>
-        <NavItem icon={<Home />} to="/dashboard">
-          {!isCollapsed && "Dashboard"}
-        </NavItem>
-        <NavItem icon={<Package />} to="/part-numbers">
-          {!isCollapsed && "Part Numbers"}
-        </NavItem>
-        <NavItem icon={<FileUp />} to="/document-upload">
-          {!isCollapsed && "Document Upload"}
-        </NavItem>
-        <NavItem icon={<CheckSquare />} to="/document-approval">
-          {!isCollapsed && "Document Approval"}
-        </NavItem>
-        <NavItem icon={<Bell />} to="/notifications">
-          {!isCollapsed && "Notifications"}
-        </NavItem>
-      </VStack>
-    </Box>
+      </div>
+      {isOpen && (
+        <div style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 1 }}>
+          <X size={24} color="black" onClick={onClose} style={{ cursor: 'pointer' }} />
+        </div>
+      )}
+      <Menu
+        theme="light"
+        mode="inline"
+        selectedKeys={[location.pathname]}
+        items={menuItems.map((item) => ({
+          key: item.key,
+          icon: item.icon,
+          label: <Link to={item.key}>{item.label}</Link>,
+        }))}
+        onClick={() => {
+          if (window.innerWidth < 992) {
+            onClose();
+          }
+        }}
+      />
+    </Sider>
   );
 };
 

@@ -20,11 +20,6 @@ const NotificationsPage = () => {
     { id: 3, type: 'document_approved', message: 'Document for PN003 has been approved', date: '2024-08-07', read: false },
     { id: 4, type: 'document_pending', message: 'Document review required for PN004', date: '2024-08-09', read: false },
     { id: 5, type: 'certificate_expiring', message: 'Certificate for PN005 expiring in 15 days', date: '2024-08-10', read: false },
-    { id: 6, type: 'certificate_expiring', message: 'Certificate for PN006 expiring in 15 days', date: '2024-08-10', read: false },
-    { id: 7, type: 'certificate_expiring', message: 'Certificate for PN007 expiring in 15 days', date: '2024-08-10', read: false },
-    { id: 8, type: 'certificate_expiring', message: 'Certificate for PN008 expiring in 15 days', date: '2024-08-10', read: false },
-    { id: 9, type: 'certificate_expiring', message: 'Certificate for PN009 expiring in 15 days', date: '2024-08-10', read: false },
-    { id: 10, type: 'certificate_expiring', message: 'Certificate for PN0010 expiring in 15 days', date: '2024-08-10', read: false },
   ]);
 
   const [filter, setFilter] = useState('all');
@@ -120,20 +115,15 @@ const NotificationsPage = () => {
 
   return (
     <Layout className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
-      <Header className="bg-white shadow-md  w-full z-10" style={{ padding: '0 20px', height: '64px' }}>
+      <Header className="bg-white shadow-md fixed w-full z-10" style={{ padding: '0 20px' }}>
         <div className="max-w-7xl mx-auto flex items-center justify-between h-full">
-        <div className="flex flex-col sm:flex-row justify-between items-center">
-  <Space className="flex items-center">
-    <Bell className="text-3xl" style={{ color: 'black' }} />
-    <Title 
-      level={3} 
-      className="m-0 text-black whitespace-nowrap overflow-hidden text-ellipsis"
-    >
-      Notifications
-    </Title>
-    <Badge count={filteredAndSortedNotifications.filter(n => !n.read).length} overflowCount={99} />
-  </Space>
-</div>
+          <Space>
+            <Bell className="text-3xl" style={{ color: 'black' }} />
+            <Title level={3} style={{ margin: 0, color: 'black' }}>
+              Notifications
+            </Title>
+            <Badge count={filteredAndSortedNotifications.filter(n => !n.read).length} overflowCount={99} />
+          </Space>
           <Button 
             icon={<Filter size={20} color="white" />} 
             onClick={() => setDrawerVisible(true)} 
@@ -144,46 +134,27 @@ const NotificationsPage = () => {
           </Button>
         </div>
       </Header>
-      <Content 
-        className="p-4 sm:p-6 lg:p-8 flex flex-col sm:flex-row"
-        style={{ marginTop: '4px', overflow: 'hidden' }}
-      >
-        {/* Filter Box */}
-        <Card 
-            className="sm:w-1/3 sm:mr-6 sm:mb-0 mb-6 sm:block hidden" 
-            style={{
-              borderRadius: '15px', 
-              boxShadow: '0 4px 6px rgba(0,0,0,0.1)', 
-              height: '600px',  // Adjust this value to control the card height
-              overflow: 'hidden' // Ensures content does not overflow outside the card
-            }}
-          >
-        
-          <FilterControls />
-        </Card>
+      <Content className="p-4 sm:p-6 lg:p-8 mt-16">
+        <div className="max-w-4xl mx-auto">
+          <Card className="mb-6 hidden sm:block" style={{ borderRadius: '15px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+            <FilterControls />
+          </Card>
 
-        {/* Notification List */}
-        <Card 
-          className="flex-grow bg-white shadow-lg rounded-xl overflow-hidden" 
-          style={{ borderRadius: '15px',
-            height: '600px', // Set a fixed height for the card
-            overflow: 'auto' // Ensure scrolling if content overflows
-           }}
-        >
           <List
+            className="bg-white shadow-lg rounded-xl overflow-hidden"
             itemLayout="horizontal"
             dataSource={filteredAndSortedNotifications}
             loading={loading}
             renderItem={(notification) => (
               <List.Item
-                className="px-6 py-4bg-blue-50 transition-all duration-300 transform hover:scale-102"
+                className="px-6 py-4 hover:bg-blue-50 transition-all duration-300 transform hover:scale-102"
                 actions={[
                   <Tooltip title={notification.read ? "Already read" : "Mark as read"}>
                     <Button
                       type="text"
                       onClick={() => handleMarkAsRead(notification.id)}
                       disabled={notification.read}
-                      icon={<CheckCircle size={20} color="green" style={{ marginRight: 8 }} />}
+                      icon={<CheckCircle size={20} color="black" style={{ marginRight: 8 }} />}
                     />
                   </Tooltip>,
                   <Tooltip title="Delete">
@@ -203,7 +174,7 @@ const NotificationsPage = () => {
               </List.Item>
             )}
           />
-        </Card>
+        </div>
       </Content>
       <Drawer
         title="Filters"
