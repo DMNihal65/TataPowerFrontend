@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Table, Button, Input, Select, message, Upload } from 'antd';
-import { InboxOutlined } from '@ant-design/icons';
-import { FileText, Upload as UploadIcon } from 'lucide-react';
+import { InboxOutlined, SearchOutlined } from '@ant-design/icons';
 
 const { Dragger } = Upload;
 const { Option } = Select;
@@ -10,18 +9,45 @@ const DocumentUpload = () => {
   const [fileList, setFileList] = useState([]);
   const [documentType, setDocumentType] = useState('');
   const [partNumbers, setPartNumbers] = useState([]);
+  const [searchText, setSearchText] = useState('');
+  const [filteredDocuments, setFilteredDocuments] = useState([]);
+  const [partNumberRange, setPartNumberRange] = useState({
+    start: '',
+    end: ''
+  });
 
   const existingDocuments = [
-    {
-      key: '1',
-      documentName: 'Certificate PN001',
-      type: 'Certificate',
-      partNumber: 'PN001',
-      uploadDate: '2024-08-01',
-      version: '1.0',
-    },
-    // Add more sample data here
+    { key: '1', documentName: 'Certificate PN001', type: 'Certificate', partNumber: 'PN001', uploadDate: '2024-08-01', version: '1.0' },
+    { key: '2', documentName: 'Test Report PN002', type: 'Test Report', partNumber: 'PN002', uploadDate: '2024-08-02', version: '1.1' },
+    { key: '3', documentName: 'Installation Manual PN010', type: 'Installation Manual', partNumber: 'PN010', uploadDate: '2024-08-03', version: '1.2' },
   ];
+
+  const handleSearch = (value) => {
+    setSearchText(value);
+    const filtered = existingDocuments.filter(doc =>
+      doc.documentName.toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredDocuments(filtered);
+  };
+
+  const handleReset = () => {
+    setSearchText('');
+    setFilteredDocuments(existingDocuments);
+  };
+
+  const handlePartNumberRangeChange = (field, value) => {
+    setPartNumberRange(prevRange => ({
+      ...prevRange,
+      [field]: value
+    }));
+  };
+
+  const filterByPartNumberRange = (value, record) => {
+    const { start, end } = partNumberRange;
+    if (!start && !end) return true;
+    const partNumber = record.partNumber;
+    return (!start || partNumber >= start) && (!end || partNumber <= end);
+  };
 
   const columns = [
     {
@@ -29,6 +55,70 @@ const DocumentUpload = () => {
       dataIndex: 'documentName',
       key: 'documentName',
       sorter: (a, b) => a.documentName.localeCompare(b.documentName),
+      filterDropdown: () => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Search document name"
+            value={searchText}
+            onChange={(e) => handleSearch(e.target.value)}
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <Button
+            type="primary"
+            onClick={() => handleSearch(searchText)}
+            style={{ marginRight: 8 }}
+          >
+            Search
+          </Button>
+          <Button
+            onClick={handleReset}
+          >
+            Reset
+          </Button>
+        </div>
+      ),
+      filterIcon: () => <SearchOutlined />,
+      onFilter: (value, record) => record.documentName.toLowerCase().includes(value.toLowerCase()),
+    },
+    {
+      title: 'Part Number',
+      dataIndex: 'partNumber',
+      key: 'partNumber',
+      filterDropdown: () => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Start Part Number"
+            value={partNumberRange.start}
+            onChange={(e) => handlePartNumberRangeChange('start', e.target.value)}
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <Input
+            placeholder="End Part Number"
+            value={partNumberRange.end}
+            onChange={(e) => handlePartNumberRangeChange('end', e.target.value)}
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <Button
+            type="primary"
+            onClick={() => {
+              setFilteredDocuments(existingDocuments.filter(doc => filterByPartNumberRange(null, doc)));
+            }}
+            style={{ marginRight: 8 }}
+          >
+            Filter
+          </Button>
+          <Button
+            onClick={() => {
+              setPartNumberRange({ start: '', end: '' });
+              setFilteredDocuments(existingDocuments);
+            }}
+          >
+            Reset
+          </Button>
+        </div>
+      ),
+      filterIcon: () => <SearchOutlined />,
+      onFilter: filterByPartNumberRange,
     },
     {
       title: 'Type',
@@ -40,11 +130,6 @@ const DocumentUpload = () => {
         { text: 'Installation Manual', value: 'Installation Manual' },
       ],
       onFilter: (value, record) => record.type === value,
-    },
-    {
-      title: 'Part Number',
-      dataIndex: 'partNumber',
-      key: 'partNumber',
     },
     {
       title: 'Upload Date',
@@ -64,8 +149,6 @@ const DocumentUpload = () => {
       message.error('Please fill in all required fields');
       return;
     }
-
-    // Handle upload logic here
     message.success('Document uploaded successfully');
     setFileList([]);
     setDocumentType('');
@@ -87,12 +170,12 @@ const DocumentUpload = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-8">Document Upload</h1>
+    <div className="p-4 md:p-6 bg-gray-100 min-h-screen">
+      <h1 className="text-2xl md:text-3xl font-bold mb-4">Document Upload</h1>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Upload New Document</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-lg shadow-md p-4 md:p-6 h-full overflow-y-auto max-h-screen">
+          <h2 className="text-lg md:text-xl font-semibold mb-4">Upload New Document</h2>
           <form>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Document Type</label>
@@ -138,18 +221,23 @@ const DocumentUpload = () => {
               <Button 
                 type="primary" 
                 onClick={handleUpload} 
-                icon={<UploadIcon className="mr-2" size={16} />}
-                className="bg-blue-500 hover:bg-blue-600"
+                className="w-full md:w-auto"
               >
-                Upload Document
+                Upload
               </Button>
             </div>
           </form>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Existing Documents</h2>
-          <Table columns={columns} dataSource={existingDocuments} />
+        <div className="bg-white rounded-lg shadow-md p-4 md:p-6 h-full overflow-y-auto max-h-screen">
+          <h2 className="text-lg md:text-xl font-semibold mb-4">Existing Documents</h2>
+          <Table 
+            columns={columns} 
+            dataSource={filteredDocuments.length > 0 ? filteredDocuments : existingDocuments} 
+            rowKey="key" 
+            pagination={{ pageSize: 5 }}
+            className="w-full"
+          />
         </div>
       </div>
     </div>

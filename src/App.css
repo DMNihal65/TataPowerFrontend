@@ -1,3 +1,17 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+.pdf-div{
+    border: 1px solid white;
+     padding-top: 10px;
+     padding-right: 25px;
+     padding-left: 18px;
+    background-color: #dedede;
+}
+
+canvas.react-pdf__Page__canvas {
+    margin-bottom: 30px;
+}
+

@@ -1,22 +1,59 @@
-import React, { useState } from 'react';
-import { Box, VStack, HStack, Text, Select, Input, List, ListItem, IconButton, Badge } from '@chakra-ui/react';
-import { CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Layout, Typography, Select, Input, List, Button, Card, Space, Drawer, Badge, Tooltip, message } from 'antd';
+import { 
+  Bell, 
+  Clock, 
+  AlertCircle, 
+  CheckCircle, 
+  Filter, 
+  Trash 
+} from 'lucide-react';
+
+const { Header, Content } = Layout;
+const { Title } = Typography;
+const { Option } = Select;
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([
     { id: 1, type: 'document_pending', message: 'Document upload pending for PN001', date: '2024-08-01', read: false },
     { id: 2, type: 'certificate_expiring', message: 'Certificate for PN002 expiring in 30 days', date: '2024-08-05', read: true },
     { id: 3, type: 'document_approved', message: 'Document for PN003 has been approved', date: '2024-08-07', read: false },
+    { id: 4, type: 'document_pending', message: 'Document review required for PN004', date: '2024-08-09', read: false },
+    { id: 5, type: 'certificate_expiring', message: 'Certificate for PN005 expiring in 15 days', date: '2024-08-10', read: false },
+    { id: 6, type: 'certificate_expiring', message: 'Certificate for PN006 expiring in 15 days', date: '2024-08-10', read: false },
+    { id: 7, type: 'certificate_expiring', message: 'Certificate for PN007 expiring in 15 days', date: '2024-08-10', read: false },
+    { id: 8, type: 'certificate_expiring', message: 'Certificate for PN008 expiring in 15 days', date: '2024-08-10', read: false },
+    { id: 9, type: 'certificate_expiring', message: 'Certificate for PN009 expiring in 15 days', date: '2024-08-10', read: false },
+    { id: 10, type: 'certificate_expiring', message: 'Certificate for PN0010 expiring in 15 days', date: '2024-08-10', read: false },
   ]);
 
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [searchTerm, setSearchTerm] = useState('');
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    setTimeout(() => setLoading(false), 800);
+  }, [filter, sortBy, searchTerm]);
 
   const handleMarkAsRead = (id) => {
-    setNotifications(notifications.map(notification => 
+    setNotifications(notifications.map(notification =>
       notification.id === id ? { ...notification, read: true } : notification
     ));
+    message.success({
+      content: 'Notification marked as read',
+      icon: <CheckCircle size={20} color="black" style={{ marginRight: 8 }} />,
+    });
+  };
+
+  const handleDelete = (id) => {
+    setNotifications(notifications.filter(notification => notification.id !== id));
+    message.success({
+      content: 'Notification deleted',
+      icon: <Trash size={20} color="black" style={{ marginRight: 8 }} />,
+    });
   };
 
   const filteredAndSortedNotifications = notifications
@@ -36,81 +73,149 @@ const NotificationsPage = () => {
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'document_pending':
-        return <Clock size={20} color="orange" />;
+        return <Clock size={25} color="black" style={{ marginRight: 8 }} />;
       case 'certificate_expiring':
-        return <AlertCircle size={20} color="red" />;
+        return <AlertCircle size={25} color="black" style={{ marginRight: 8 }} />;
       case 'document_approved':
-        return <CheckCircle size={20} color="green" />;
+        return <CheckCircle size={25} color="black" style={{ marginRight: 8 }} />;
       default:
         return null;
     }
   };
 
+  const FilterControls = () => (
+    <Space direction="vertical" size="middle" className="w-full">
+      <Select
+        className="w-full"
+        value={filter}
+        onChange={setFilter}
+        size="large"
+        dropdownStyle={{ borderRadius: '8px' }}
+      >
+        <Option value="all">All Notifications</Option>
+        <Option value="unread">Unread</Option>
+        <Option value="document_pending">Document Pending</Option>
+        <Option value="certificate_expiring">Certificate Expiring</Option>
+        <Option value="document_approved">Document Approved</Option>
+      </Select>
+      <Select
+        className="w-full"
+        value={sortBy}
+        onChange={setSortBy}
+        size="large"
+        dropdownStyle={{ borderRadius: '8px' }}
+      >
+        <Option value="date">Sort by Date</Option>
+        <Option value="message">Sort by Message</Option>
+      </Select>
+      <Input.Search
+        placeholder="Search notifications..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        size="large"
+        style={{ borderRadius: '8px' }}
+      />
+    </Space>
+  );
+
   return (
-    <Box p={5}>
-      <VStack align="stretch" spacing={5}>
-        <HStack justify="space-between">
-          <Select 
-            width="200px" 
-            value={filter} 
-            onChange={(e) => setFilter(e.target.value)}
+    <Layout className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
+      <Header className="bg-white shadow-md  w-full z-10" style={{ padding: '0 20px', height: '64px' }}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-full">
+        <div className="flex flex-col sm:flex-row justify-between items-center">
+  <Space className="flex items-center">
+    <Bell className="text-3xl" style={{ color: 'black' }} />
+    <Title 
+      level={3} 
+      className="m-0 text-black whitespace-nowrap overflow-hidden text-ellipsis"
+    >
+      Notifications
+    </Title>
+    <Badge count={filteredAndSortedNotifications.filter(n => !n.read).length} overflowCount={99} />
+  </Space>
+</div>
+          <Button 
+            icon={<Filter size={20} color="white" />} 
+            onClick={() => setDrawerVisible(true)} 
+            className="sm:hidden"
+            style={{ borderRadius: '20px', background: '#1890ff', color: 'white' }}
           >
-            <option value="all">All Notifications</option>
-            <option value="unread">Unread</option>
-            <option value="document_pending">Document Pending</option>
-            <option value="certificate_expiring">Certificate Expiring</option>
-            <option value="document_approved">Document Approved</option>
-          </Select>
-          <Select 
-            width="200px" 
-            value={sortBy} 
-            onChange={(e) => setSortBy(e.target.value)}
+            Filters
+          </Button>
+        </div>
+      </Header>
+      <Content 
+        className="p-4 sm:p-6 lg:p-8 flex flex-col sm:flex-row"
+        style={{ marginTop: '4px', overflow: 'hidden' }}
+      >
+        {/* Filter Box */}
+        <Card 
+            className="sm:w-1/3 sm:mr-6 sm:mb-0 mb-6 sm:block hidden" 
+            style={{
+              borderRadius: '15px', 
+              boxShadow: '0 4px 6px rgba(0,0,0,0.1)', 
+              height: '600px',  // Adjust this value to control the card height
+              overflow: 'hidden' // Ensures content does not overflow outside the card
+            }}
           >
-            <option value="date">Sort by Date</option>
-            <option value="message">Sort by Message</option>
-          </Select>
-          <Input 
-            placeholder="Search notifications..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            width="300px"
-          />
-        </HStack>
         
-        <List spacing={3}>
-          {filteredAndSortedNotifications.map((notification) => (
-            <ListItem 
-              key={notification.id} 
-              p={3} 
-              bg={notification.read ? "gray.100" : "blue.100"} 
-              borderRadius="md"
-            >
-              <HStack justify="space-between">
-                <HStack>
-                  {getNotificationIcon(notification.type)}
-                  <VStack align="start" spacing={0}>
-                    <Text>{notification.message}</Text>
-                    <Text fontSize="sm" color="gray.500">{notification.date}</Text>
-                  </VStack>
-                </HStack>
-                <HStack>
-                  {!notification.read && (
-                    <Badge colorScheme="red">New</Badge>
-                  )}
-                  <IconButton
-                    aria-label="Mark as read"
-                    icon={<CheckCircle />}
-                    size="sm"
-                    onClick={() => handleMarkAsRead(notification.id)}
-                    isDisabled={notification.read}
-                  />
-                </HStack>
-              </HStack>
-            </ListItem>
-          ))}
-        </List>
-      </VStack>
-    </Box>
+          <FilterControls />
+        </Card>
+
+        {/* Notification List */}
+        <Card 
+          className="flex-grow bg-white shadow-lg rounded-xl overflow-hidden" 
+          style={{ borderRadius: '15px',
+            height: '600px', // Set a fixed height for the card
+            overflow: 'auto' // Ensure scrolling if content overflows
+           }}
+        >
+          <List
+            itemLayout="horizontal"
+            dataSource={filteredAndSortedNotifications}
+            loading={loading}
+            renderItem={(notification) => (
+              <List.Item
+                className="px-6 py-4bg-blue-50 transition-all duration-300 transform hover:scale-102"
+                actions={[
+                  <Tooltip title={notification.read ? "Already read" : "Mark as read"}>
+                    <Button
+                      type="text"
+                      onClick={() => handleMarkAsRead(notification.id)}
+                      disabled={notification.read}
+                      icon={<CheckCircle size={20} color="green" style={{ marginRight: 8 }} />}
+                    />
+                  </Tooltip>,
+                  <Tooltip title="Delete">
+                    <Button
+                      type="text"
+                      onClick={() => handleDelete(notification.id)}
+                      icon={<Trash size={20} color="black" style={{ marginRight: 8 }} />}
+                    />
+                  </Tooltip>
+                ]}
+              >
+                <List.Item.Meta
+                  avatar={getNotificationIcon(notification.type)}
+                  title={notification.message}
+                  description={notification.date}
+                />
+              </List.Item>
+            )}
+          />
+        </Card>
+      </Content>
+      <Drawer
+        title="Filters"
+        placement="right"
+        closable
+        onClose={() => setDrawerVisible(false)}
+        visible={drawerVisible}
+        width={300}
+      >
+        <FilterControls />
+      </Drawer>
+    </Layout>
   );
 };
 

@@ -50,8 +50,8 @@ const Sidebar = ({ isOpen, onClose }) => {
           src={logo}
           alt="Logo"
           style={{
-            height: '100%',
-            maxWidth: '100%',
+            height: '150px',
+            maxWidth: '200px',
             objectFit: 'contain', // Ensure the logo fits within the container
           }}
         />

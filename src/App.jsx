@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Layout } from 'antd';
 import { ConfigProvider } from 'antd';
 
+import './App.css';
+
 // Page components
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -15,6 +17,9 @@ import Notifications from './pages/Notifications';
 // Layout components
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
+import Pdf from './components/Pdf';
+
+
 
 const { Content } = Layout;
 
@@ -54,6 +59,7 @@ const App = () => {
             element={
               <MainLayout>
                 <Routes>
+                  <Route path="/pdf" element={<Pdf/>} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/part-numbers" element={<PartNumberManagement />} />
                   <Route path="/document-upload" element={<DocumentUpload />} />

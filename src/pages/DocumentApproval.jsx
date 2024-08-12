@@ -1,13 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import { Table, Button, Input, Space, Modal } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import { FileText, CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle } from 'lucide-react';
+import Pdf from '../components/Pdf';
+import { Alert } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+
 
 const DocumentApproval = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
+  // const [status, setStatus]= useState("Pending");
+  const [alert, setAlert] = useState({ visible: false, type: '', message: '' });
 
-  const data = [
+  useEffect(() => {
+    if (alert.visible) {
+      const timer = setTimeout(() => {
+        setAlert({ ...alert, visible: false });
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [alert.visible]);
+
+  const [data, setData] = useState([
     {
       key: '1',
       documentName: 'Certificate PN001',
@@ -17,23 +32,23 @@ const DocumentApproval = () => {
       status: 'Pending',
     },
     {
-        key: '2',
-        documentName: 'Certificate PN002',
-        type: 'Certificate',
-        partNumber: 'PN002',
-        uploadDate: '2024-08-01',
-        status: 'Pending',
-      },
-      {
-        key: '3',
-        documentName: 'Certificate PN002',
-        type: 'Certificate',
-        partNumber: 'PN002',
-        uploadDate: '2024-08-01',
-        status: 'Pending',
-      },
+      key: '2',
+      documentName: 'Certificate PN002',
+      type: 'Certificate',
+      partNumber: 'PN002',
+      uploadDate: '2024-08-01',
+      status: 'Pending',
+    },
+    {
+      key: '3',
+      documentName: 'Certificate PN003',
+      type: 'Certificate',
+      partNumber: 'PN003',
+      uploadDate: '2024-08-01',
+      status: 'Pending',
+    },
     // Add more sample data here
-  ];
+  ]);
 
   const columns = [
     {
@@ -98,7 +113,9 @@ const DocumentApproval = () => {
       key: 'status',
       render: status => (
         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-          status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+          status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+          status === 'Approved' ? 'bg-green-100 text-green-800' :
+          'bg-red-100 text-red-800'          
         }`}>
           {status}
         </span>
@@ -119,56 +136,87 @@ const DocumentApproval = () => {
   };
 
   const handleApprove = () => {
+    setData(data.map(doc => 
+      doc.key === selectedDocument.key ? { ...doc, status: 'Approved' } : doc
+    ));
     // Handle approval logic here
     setIsModalVisible(false);
+    setAlert({
+      visible: true,
+      type: 'success',
+      message: 'Document Approved',
+    });
   };
 
   const handleReject = () => {
+    setData(data.map(doc => 
+      doc.key === selectedDocument.key ? { ...doc, status: 'Rejected' } : doc
+    ));
     // Handle rejection logic here
     setIsModalVisible(false);
+    setAlert({
+      visible: true,
+      type: 'error',
+      message: 'Document Rejected',
+    });
   };
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-8">Document Approval</h1>
+    <div className="p-6">
+       {alert.visible && <Alert  message={alert.message} type={alert.type} showIcon style={{ width: '300px', margin: '0 auto' }} />}
+
+      <h2 className="text-3xl font-bold mb-8 text-center lg:text-left lg:ml-[300px]">Document Approval</h2>
       
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <Table columns={columns} dataSource={data} />
+      <div className="bg-white rounded-lg shadow-md  max-w-6xl mx-auto">
+        <Table columns={columns} dataSource={data}
+         scroll={{ x: 600 }}  // Enables horizontal scroll on small screens
+          pagination={{ pageSize: 5 }} // Adjust pagination for better mobile view
+      />
       </div>
 
       <Modal
-        title="Document Preview"
-        visible={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={null}
-        width={700}
-      >
-        {selectedDocument && (
-          <div className="p-4">
-            <h2 className="text-xl font-semibold mb-4">{selectedDocument.documentName}</h2>
-            <p><strong>Type:</strong> {selectedDocument.type}</p>
-            <p><strong>Part Number:</strong> {selectedDocument.partNumber}</p>
-            <p><strong>Upload Date:</strong> {selectedDocument.uploadDate}</p>
-            <div className="mt-8 flex justify-end space-x-4">
-              <Button 
-                type="primary" 
-                icon={<CheckCircle className="mr-2" size={16} />}
-                onClick={handleApprove}
-                className="bg-green-500 hover:bg-green-600"
-              >
-                Approve
-              </Button>
-              <Button 
-                danger 
-                icon={<XCircle className="mr-2" size={16} />}
-                onClick={handleReject}
-              >
-                Reject
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+                title="Document Preview"
+                visible={isModalVisible}
+                onCancel={() => setIsModalVisible(false)}
+                footer={null}
+                width="90%" // Set the width to 90% for mobile view
+                style={{ maxWidth: '1200px' }} // Set a max width for larger screens
+                bodyStyle={{ padding: '0' }} // Remove extra padding for a better appearance
+                centered // Center the modal on the screen
+            >
+                {selectedDocument && (
+                    <div className="flex flex-col lg:flex-row">
+                        <div className="lg:w-1/4 p-4 lg:border-r lg:border-gray-200">
+                            <h2 className="text-xl font-semibold mb-4">{selectedDocument.documentName}</h2>
+                            <p><strong>Type:</strong> {selectedDocument.type}</p>
+                            <p><strong>Part Number:</strong> {selectedDocument.partNumber}</p>
+                            <p><strong>Upload Date:</strong> {selectedDocument.uploadDate}</p>
+                        </div>
+                        <div className="lg:w-3/4 p-4 flex flex-col">
+                            <div className="flex-grow">
+                                <Pdf />
+                            </div>
+                            <div className="mt-8 flex justify-end space-x-4">
+                                <Button 
+                                    type="primary"  
+                                    icon={<CheckCircle className="mr-2" size={16} />}
+                                    onClick={handleApprove}
+                                    className="bg-green-500 hover:bg-green-600"
+                                >
+                                    Approve
+                                </Button>
+                                <Button 
+                                    danger 
+                                    icon={<XCircle className="mr-2" size={16} />}
+                                    onClick={handleReject}
+                                >
+                                    Reject
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Modal>
     </div>
   );
 };
