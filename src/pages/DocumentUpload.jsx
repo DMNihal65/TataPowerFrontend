@@ -97,17 +97,13 @@ const EnhancedDocumentUpload = () => {
     setFileList(info.fileList);
   };
 
-  // const handlePartNumberSelect = (value) => {
-  //   setPartNumbers(value);
-  // };
+
 
   const handleCustomPartNumberChange = (e) => {
     setCustomPartNumbers(e.target.value);
   };
 
-  // const handlePartNumberRangeChange = (type, value) => {
-  //   setPartNumberRange(prev => ({ ...prev, [type]: value }));
-  // };
+
 
   const handleEditFolder = async (values) => {
     try {
@@ -145,25 +141,7 @@ const EnhancedDocumentUpload = () => {
     }
   };
 
-  // const handleSubmit = () => {
-  //   if (!selectedFolder || fileList.length === 0 || (partNumbers.length === 0 && !customPartNumbers && !partNumberRange.start)) {
-  //     message.error('Please select a folder, upload files, and specify at least one part number');
-  //     return;
-  //   }
 
-  //   const summary = fileList.map(file => ({
-  //     fileName: file.name,
-  //     folder: selectedFolder.name,
-  //     partNumbers: [
-  //       ...partNumbers,
-  //       ...customPartNumbers.split(',').map(pn => pn.trim()),
-  //       ...generatePartNumberRange(partNumberRange.start, partNumberRange.end)
-  //     ]
-  //   }));
-
-  //   setUploadSummary(summary);
-  //   console.log('Upload summary:', summary);
-  // };
 
   const generatePartNumberRange = (start, end) => {
     if (!start || !end) return [];
@@ -249,6 +227,7 @@ const EnhancedDocumentUpload = () => {
             showIcon
             defaultExpandAll
             onSelect={handleFolderSelect}
+            
             switcherIcon={<DownOutlined />}
           >
             {renderTreeNodes(folders)}
