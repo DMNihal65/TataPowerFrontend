@@ -1,7 +1,7 @@
 import React from 'react';
 import { Layout, Menu } from 'antd';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Package, FileUp, CheckSquare, Bell, X, Folder } from 'lucide-react';
+import { Home, Package, FileUp, CheckSquare, Bell, X, Folder, File } from 'lucide-react';
 import logo from '../assets/tatapower.svg';
 
 const { Sider } = Layout;
@@ -11,6 +11,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   const menuItems = [
     { key: '/dashboard', icon: <Home size={18} />, label: 'Dashboard' },
+    { key: '/document-master', icon: <File size={18} />, label: 'Document Master' },
     { key: '/part-numbers', icon: <Package size={18} />, label: 'Part Numbers' },
     { key: '/document-upload', icon: <FileUp size={18} />, label: 'Document Upload' },
     { key: '/document-approval', icon: <CheckSquare size={18} />, label: 'Document Approval' },

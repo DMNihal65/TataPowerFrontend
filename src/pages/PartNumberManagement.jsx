@@ -20,7 +20,7 @@ const PartNumberManagement = () => {
   useEffect(() => {
     const fetchPartNumbers = async () => {
       try {
-        const response = await axios.get('http://172.18.100.54:7000/getallpartnumbers/');
+        const response = await axios.get('http://172.18.100.88:7001/getallpartnumbers/');
         setPartNumbers(response.data);
       } catch (error) {
         console.error('Failed to fetch part numbers:', error);
@@ -65,7 +65,7 @@ const PartNumberManagement = () => {
         };
 
         setLoading(true);
-        axios.post('http://172.18.100.54:7000/createpartnumbers/', partNumberData)
+        axios.post('http://172.18.100.88:7001/createpartnumbers/', partNumberData)
           .then(response => {
             message.success('Part number created successfully!');
             setIsModalVisible(false);

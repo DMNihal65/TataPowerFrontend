@@ -13,7 +13,7 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://172.18.100.54:7000/auth', qs.stringify({
+      const response = await axios.post('http://172.18.100.88:7001/auth', qs.stringify({
         username: username.current.value,
         password: password.current.value
       }), {

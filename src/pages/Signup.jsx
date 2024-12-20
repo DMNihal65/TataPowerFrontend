@@ -32,7 +32,7 @@ const SignupPage = () => {
       
 
       try {
-         const response= await axios.post('http://172.18.100.54:7000/register',{
+         const response= await axios.post('http://172.18.100.88:7001/register',{
           email: email.current.value,
           username: username.current.value,
           role: role.current.value,

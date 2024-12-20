@@ -30,7 +30,7 @@ const EnhancedDocumentUpload = () => {
 
   const fetchFolders = async () => {
     try {
-      const response = await axios.get('http://172.18.100.54:7000/getallfolders/');
+      const response = await axios.get('http://172.18.100.88:7001/getallfolders/');
       const organizedFolders = organizefolders(response.data);
       setFolders(organizedFolders);
     } catch (error) {
@@ -108,7 +108,7 @@ const EnhancedDocumentUpload = () => {
 
   const handleEditFolder = async (values) => {
     try {
-      await axios.put(`http://172.18.100.54:7000/foldersupdate/folder_name?folder_name=${editingFolder.name}`, {
+      await axios.put(`http://172.18.100.88:7001/foldersupdate/folder_name?folder_name=${editingFolder.name}`, {
         name: values.name,
         description: values.description,
         requires_validity: values.requires_validity,
@@ -126,7 +126,7 @@ const EnhancedDocumentUpload = () => {
 
   const handleAddFolder = async (values) => {
     try {
-      await axios.post('http://172.18.100.54:7000/folders/', {
+      await axios.post('http://172.18.100.88:7001/folders/', {
         name: values.name,
         description: values.description,
         requires_validity: values.requires_validity,

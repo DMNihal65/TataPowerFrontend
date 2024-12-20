@@ -1,0 +1,18 @@
+# docker-compose.yml
+version: '3.8'
+services:
+  frontend:
+    build: .
+    container_name: react-app
+    restart: always
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    volumes:
+      - //SDC-2/Tata/main/Folders:/network-share
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
