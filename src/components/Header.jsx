@@ -24,11 +24,7 @@ const HeaderComponent = ({ onMenuClick }) => {
             onClick={onMenuClick}
             style={{ fontSize: '16px', width: 64, height: 64 }}
           />
-          <Search
-            placeholder="Search..."
-            onSearch={value => console.log(value)}
-            style={{ width: 200, marginLeft: 24 }}
-          />
+          
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <Button type="text" icon={<BellOutlined />} style={{ marginRight: 24 }} />

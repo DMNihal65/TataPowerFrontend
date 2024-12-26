@@ -10,13 +10,13 @@ const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
 
   const menuItems = [
-    { key: '/dashboard', icon: <Home size={18} />, label: 'Dashboard' },
-    { key: '/document-master', icon: <File size={18} />, label: 'Document Master' },
-    { key: '/part-numbers', icon: <Package size={18} />, label: 'Part Numbers' },
-    { key: '/document-upload', icon: <FileUp size={18} />, label: 'Document Upload' },
-    { key: '/document-approval', icon: <CheckSquare size={18} />, label: 'Document Approval' },
-    { key: '/notifications', icon: <Bell size={18} />, label: 'Notifications' },
-    { key: '/folder-master', icon: <Folder size={18} />, label: 'Folder Master' },
+    { key: '/tatapowerdoc/dashboard', icon: <Home size={18} />, label: 'Dashboard' },
+    { key: '/tatapowerdoc/document-master', icon: <File size={18} />, label: 'Document Master' },
+    { key: '/tatapowerdoc/part-numbers', icon: <Package size={18} />, label: 'Part Numbers' },
+    { key: '/tatapowerdoc/document-upload', icon: <FileUp size={18} />, label: 'Document Upload' },
+    { key: '/tatapowerdoc/document-approval', icon: <CheckSquare size={18} />, label: 'Document Approval' },
+    { key: '/tatapowerdoc/notifications', icon: <Bell size={18} />, label: 'Notifications' },
+    // { key: '/tatapowerdoc/folder-master', icon: <Folder size={18} />, label: 'Folder Master' },
   ];
 
   return (
@@ -43,8 +43,8 @@ const Sidebar = ({ isOpen, onClose }) => {
       <div
         className="logo"
         style={{
-          height: isOpen ? '80px' : '64px', // Adjust height when sidebar is collapsed or open
-          margin: '16px',
+          height: isOpen && '100px', // Adjust height when sidebar is collapsed or open
+          width: isOpen && '150px',
           textAlign: 'center',
         }}
       >
@@ -52,14 +52,14 @@ const Sidebar = ({ isOpen, onClose }) => {
           src={logo}
           alt="Logo"
           style={{
-            height: '100%',
-            maxWidth: '100%',
+            height: '100px',
+            width: '150px',
             objectFit: 'contain', // Ensure the logo fits within the container
           }}
         />
       </div>
       {isOpen && (
-        <div style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 1 }}>
+        <div style={{ position: 'absolute', top: '15px', right: '16px', zIndex: 1 }}>
           <X size={24} color="black" onClick={onClose} style={{ cursor: 'pointer' }} />
         </div>
       )}

@@ -87,7 +87,7 @@ const LoginPage = () => {
           </div>
         </form>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Don't have an account? <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">Sign Up</Link>
+          Don't have an account? <Link to="/tatapowerdoc/signup" className="font-medium text-indigo-600 hover:text-indigo-500">Sign Up</Link>
         </p>
       </div>
     </div>

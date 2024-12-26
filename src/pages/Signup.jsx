@@ -116,7 +116,7 @@ const SignupPage = () => {
           </div>
         </form>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Already have an account? <Link to="/" className="font-medium text-indigo-600 hover:text-indigo-500">Log In</Link>
+          Already have an account? <Link to="/tatapowerdoc" className="font-medium text-indigo-600 hover:text-indigo-500">Log In</Link>
         </p>
         {message && <p>{typeof message === 'string' ? message : JSON.stringify(message)}</p>}
       </div>

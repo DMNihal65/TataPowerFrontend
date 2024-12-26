@@ -11,7 +11,6 @@ import PartNumberManagement from './pages/PartNumberManagement';
 import DocumentUpload from './pages/DocumentUpload';
 import DocumentApproval from './pages/DocumentApproval';
 import Notifications from './pages/Notifications';
-import FolderMaster from './pages/FolderMaster';
 import DocumentMaster from './pages/DocumentMaster';
 
 // Layout components
@@ -49,10 +48,10 @@ const App = () => {
     >
       <Router>
         <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          <Route path="/tatapowerdoc" element={<Login />} />
+          <Route path="/tatapowerdoc/signup" element={<Signup />} />
           <Route
-            path="/*"
+            path="/tatapowerdoc/*"
             element={
               <MainLayout>
                 <Routes>
@@ -62,7 +61,7 @@ const App = () => {
                   <Route path="/document-upload" element={<DocumentUpload />} />
                   <Route path="/document-approval" element={<DocumentApproval />} />
                   <Route path="/notifications" element={<Notifications />} />
-                  <Route path="/folder-master" element={<FolderMaster />} />
+                  {/* <Route path="/folder-master" element={<FileExplorer />} /> */}
 
                 </Routes>
               </MainLayout>

@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Tree, Input, Button, Upload, Select, Table, Modal, message, Switch, Form, Layout, Card, Tabs } from 'antd';
-import { DownOutlined, FolderOutlined, FileOutlined, PlusOutlined, EditOutlined, UploadOutlined } from '@ant-design/icons';
+import { Tree, Upload, Button, Modal, Form, message, Input, Switch , Select , Card , Table} from 'antd'; // Added Switch
+import {
+  FolderOutlined,
+  FileOutlined,
+  PlusOutlined,
+  UploadOutlined,
+} from '@ant-design/icons';
 import axios from 'axios';
 
-const { TreeNode } = Tree;
-const { Dragger } = Upload;
-const { Option } = Select;
-const { Content, Sider } = Layout;
-const { TabPane } = Tabs;
-
-const EnhancedDocumentUpload = () => {
+const FileExplorer = () => {
   const [treeData, setTreeData] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,9 +18,6 @@ const EnhancedDocumentUpload = () => {
   const [partNumbers, setPartNumbers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadSummary, setUploadSummary] = useState([]);
-  const [filePreviewModal, setFilePreviewModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-
 
   useEffect(() => {
     // Fetch data from the API
@@ -65,7 +61,6 @@ const EnhancedDocumentUpload = () => {
             key: `${item.id}-file-${index}`,
             title: file.file_name,
             isFolder: false,
-            fileUrl: file.file_path, // Store the file URL
           });
         });
       }
@@ -100,14 +95,7 @@ const EnhancedDocumentUpload = () => {
   }, []);
 
   const onSelect = (keys, event) => {
-    const node = event.node;
-    setSelectedNode(node);
-    
-    // If it's a file node, open the preview modal
-    if (!node.isFolder && node.fileUrl) {
-      setSelectedFile(node.fileUrl);
-      setFilePreviewModal(true);
-    }
+    setSelectedNode(event.node);
   };
 
 
@@ -161,44 +149,8 @@ const EnhancedDocumentUpload = () => {
         const formData = new FormData();
         formData.append('file', uploadedFile);
 
-        let allPartNumbers = [];
-        
-        // Add selected existing part numbers
-        if (values.existing_part_numbers) {
-          allPartNumbers = [...values.existing_part_numbers];
-        }
-
-        // Add custom part numbers (split by comma if multiple)
-        if (values.custom_part_numbers) {
-          const customParts = values.custom_part_numbers.split(',').map(part => part.trim());
-          allPartNumbers = [...allPartNumbers, ...customParts];
-        }
-
-        // Add part numbers from range
-        if (values.range_start && values.range_end) {
-          // Function to generate part numbers in range
-          const generateRange = (start, end) => {
-            const startNum = parseInt(start.replace(/\D/g, ''));
-            const endNum = parseInt(end.replace(/\D/g, ''));
-            const prefix = start.replace(/[0-9]/g, '');
-            const padding = start.replace(/\D/g, '').length;
-            
-            const range = [];
-            for (let i = startNum; i <= endNum; i++) {
-              range.push(`${prefix}${i.toString().padStart(padding, '0')}`);
-            }
-            return range;
-          };
-
-          const rangeNumbers = generateRange(values.range_start, values.range_end);
-          allPartNumbers = [...allPartNumbers, ...rangeNumbers];
-        }
-
-        // Remove duplicates
-        const uniquePartNumbers = [...new Set(allPartNumbers)];
-
         const response = await fetch(
-          `http://192.168.137.161:7001/upload-file/?folder_id=${selectedNode.key}&part_numbers=${uniquePartNumbers.join(',')}`,
+          `http://192.168.137.161:7001/upload-file/?folder_id=${selectedNode.key}&part_numbers=${values.part_numbers || ''}`,
           {
             method: 'POST',
             headers: {
@@ -220,7 +172,7 @@ const EnhancedDocumentUpload = () => {
           key: uploadedFileInfo.document_id,
           fileName: uploadedFile.name,
           folder: selectedNode.title,
-          partNumbers: uniquePartNumbers,
+          partNumbers: values.part_numbers,
         };
 
         // Update the upload summary with the new entry
@@ -263,7 +215,6 @@ const EnhancedDocumentUpload = () => {
       ),
       key: item.key,
       isFolder: item.isFolder,
-      fileUrl: item.fileUrl,
       children: item.children && item.children.length > 0 ? renderTreeNodes(item.children) : null,
     }));
 
@@ -320,20 +271,6 @@ const EnhancedDocumentUpload = () => {
           defaultExpandAll
           style={{ border: '1px solid #d9d9d9', padding: '10px' }}
         />
-
-      <Modal
-          title="File Preview"
-          open={filePreviewModal}
-          onCancel={() => setFilePreviewModal(false)}
-          width="80%"
-          footer={null}
-        >
-          <iframe
-            src={selectedFile}
-            className="w-full h-[60vh] border rounded"
-            title="File Preview"
-          />
-        </Modal>
   
         <Modal
           title={`Add ${isFolder ? 'Folder' : 'File'}`}
@@ -386,7 +323,7 @@ const EnhancedDocumentUpload = () => {
               </>
             ) : (
               <>
-                <Form.Item label="Select Existing Part Numbers" name="existing_part_numbers">
+                <Form.Item label="Select Existing Part Numbers" name="part_numbers">
                     <Select
                       mode="multiple"
                       style={{ width: '100%' }}
@@ -400,57 +337,11 @@ const EnhancedDocumentUpload = () => {
                       ))}
                     </Select>
                   </Form.Item>
-                <Form.Item label="Custom Part Numbers" name="custom_part_numbers">
+                <Form.Item label="Custom Part Numbers">
                      <Input 
                        placeholder="Enter custom part numbers" 
                       />
                 </Form.Item>
-
-                <Form.Item label="Part Number Range">
-                        <Input.Group compact>
-                          <Form.Item
-                            name="range_start"
-                            noStyle
-                            rules={[
-                              { 
-                                pattern: /^[A-Za-z0-9]+$/,
-                                message: 'Please enter valid part number'
-                              }
-                            ]}
-                          >
-                            <Input 
-                              style={{ width: '45%' }} 
-                              placeholder="Start Range (e.g. PN001)" 
-                            />
-                          </Form.Item>
-                          <Input
-                            style={{
-                              width: '10%',
-                              borderLeft: 0,
-                              borderRight: 0,
-                              pointerEvents: 'none',
-                              backgroundColor: '#fff'
-                            }}
-                            placeholder="to"
-                            disabled
-                          />
-                          <Form.Item
-                            name="range_end"
-                            noStyle
-                            rules={[
-                              { 
-                                pattern: /^[A-Za-z0-9]+$/,
-                                message: 'Please enter valid part number'
-                              }
-                            ]}
-                          >
-                            <Input 
-                              style={{ width: '45%' }} 
-                              placeholder="End Range (e.g. PN010)" 
-                            />
-                          </Form.Item>
-                        </Input.Group>
-                      </Form.Item>
                                       
                 <Form.Item 
                   label="Upload File" 
@@ -480,12 +371,11 @@ const EnhancedDocumentUpload = () => {
             dataSource={uploadSummary}
             pagination={false}
             rowKey="fileName"
-            scroll={{ y: 300 }}
             />
           </Card>
       </div>
       </>
     );
   };
-
-export default EnhancedDocumentUpload;
+  
+  export default FileExplorer;
