@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Tree, Input, Button, Upload, Select, Table, Modal, message, Switch, Form, Layout, Card, Tabs, Breadcrumb, Tooltip, Dropdown, Menu, Space, DatePicker, List, Typography } from 'antd';
-import { DownOutlined, FolderOutlined, FileOutlined, PlusOutlined, UploadOutlined, SearchOutlined, SortAscendingOutlined, SortDescendingOutlined, InfoCircleOutlined, HomeOutlined, DownloadOutlined, FolderFilled, FilePdfFilled, FileImageFilled, UnorderedListOutlined, AppstoreOutlined, CloseOutlined, InboxOutlined , EditOutlined} from '@ant-design/icons';
+import { DownOutlined, FolderOutlined, FileOutlined, PlusOutlined, UploadOutlined, SearchOutlined, SortAscendingOutlined, SortDescendingOutlined, InfoCircleOutlined, HomeOutlined, DownloadOutlined, FolderFilled, FilePdfFilled, FileImageFilled, UnorderedListOutlined, AppstoreOutlined, CloseOutlined, InboxOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { Eye } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import moment from 'moment';
 import * as XLSX from 'xlsx';
-import dayjs from "dayjs";
-
 
 const { TreeNode } = Tree;
 const { Dragger } = Upload;
@@ -39,7 +37,6 @@ const EnhancedDocumentUpload = () => {
   const [searchText, setSearchText] = useState('');
   const [sortOrder, setSortOrder] = useState('asc');
   const [sortField, setSortField] = useState('title');
-  const [fileTypeFilter, setFileTypeFilter] = useState('all');
   const [currentPath, setCurrentPath] = useState([]);
   const [fileDetails, setFileDetails] = useState([]);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
@@ -63,9 +60,6 @@ const EnhancedDocumentUpload = () => {
   const [fileDetailsForm] = Form.useForm();
   const [existingFiles, setExistingFiles] = useState([]);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [editingFile, setEditingFile] = useState(null);
-  const [newValidityDate, setNewValidityDate] = useState(null);
 
   useEffect(() => {
     axios
@@ -486,18 +480,16 @@ const EnhancedDocumentUpload = () => {
       title: 'Validity Date',
       dataIndex: 'validity_date',
       key: 'validity_date',
-      render: (date) => date ? moment(date).format('YYYY-MM-DD') : '-'    },
+      render: (date) => date || '-'
+    },
     {
       title: 'Action',
       key: 'action',
       render: (_, record) => (
-        <>
         <Button
           type="primary"
           icon={<Eye size={16} />}
-          style={{marginRight:'6px'}}
-          onClick={(e) => {
-            e.stopPropagation();
+          onClick={() => {
             setFileDetails({
               title: record.title,
               fileUrl: record.fileUrl,
@@ -510,19 +502,6 @@ const EnhancedDocumentUpload = () => {
         >
           View
         </Button>
-         <Button
-         type="default"
-         icon={<EditOutlined size={16} />  }
-         onClick={(e) => {
-           e.stopPropagation();
-           setEditingFile(record);
-           setNewValidityDate(record.validity_date ? moment(record.validity_date) : null);
-           setIsEditModalVisible(true);
-         }}
-       >
-         Edit
-       </Button>
-       </>
       ),
     },
   ];
@@ -573,34 +552,6 @@ const EnhancedDocumentUpload = () => {
         });
       }
       setCurrentPath(newPath);
-    }
-  };
-
-  const handleUpdateValidityDate = async () => {
-    try {
-      if (!newValidityDate) {
-        message.error('Please select a new validity date');
-        return;
-      }
-
-      const response = await axios.put(`${API_URL}/update-documents-validity/`, {
-        file_name: editingFile.title,
-        validity_date: newValidityDate.format('YYYY-MM-DD'),
-        plant: plant,
-        part_numbers: editingFile.part_numbers
-      }, {
-        headers: { "Content-Type": "application/json" } // Ensure JSON format
-      });
-      
-
-      if (response.data) {
-        message.success('Validity date updated successfully');
-        setIsEditModalVisible(false);
-         
-        await fetchFolderData();
-      }
-    } catch (error) {
-      message.error(error.response?.data?.detail || 'Failed to update validity date');
     }
   };
 
@@ -896,21 +847,8 @@ const EnhancedDocumentUpload = () => {
       message.error('Failed to upload files: ' + (error.response?.data?.detail || error.message));
     }
   };
-
-  const handleFileClick = (item) => {
-    const fileDetails = {
-      title: item.title,
-      fileUrl: item.fileUrl,
-      fileType: item.fileUrl?.split('.').pop().toLowerCase(),
-      part_numbers: item.part_numbers,
-      validity_date: item.validity_date
-    };
-    
-    // Update the selected file details in the card
-    setSelectedFolderFiles([fileDetails]);
-  };
-
-  return (
+  
+    return (
     <>
       <div className="flex flex-col gap-6 p-6">
         <div className="flex gap-6">
@@ -947,163 +885,64 @@ const EnhancedDocumentUpload = () => {
                 </Space>
               </div>
 
-              <div className="flex flex-col gap-4 mb-4">
-  {/* Search, Sort, and Filter Row */}
-  <div className="flex flex-wrap items-center gap-4">
-    <Input
-      placeholder="Search files and folders..."
-      prefix={<SearchOutlined />}
-      value={searchText}
-      onChange={(e) => setSearchText(e.target.value)}
-      className="w-44"
-      allowClear
-    />
-    <Select
-      placeholder="Sort by"
-      value={sortField}
-      onChange={setSortField}
-      className="w-32"
-    >
-      <Option value="title">Name</Option>
-      <Option value="type">Type</Option>
-      <Option value="modified">Modified</Option>
-    </Select>
-    <Button
-      icon={sortOrder === 'asc' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
-      onClick={() => setSortOrder(order => order === 'asc' ? 'desc' : 'asc')}
-    />
-    <Select
-      placeholder="Filter by type"
-      className="w-32"
-      allowClear
-      onChange={(value) => setFileTypeFilter(value)}
-    >
-      <Option value="all">All Types</Option>
-      <Option value="folder">Folders</Option>
-      <Option value="pdf">PDF</Option>
-      <Option value="image">Images</Option>
-    </Select>
-  </div>
-
-  {/* Buttons Row */}
-  <div className="flex flex-wrap gap-2">
-    <Button
-      type="primary"
-      icon={<PlusOutlined />}
-      onClick={() => openModal(true)}
-    >
-      New Folder
-    </Button>
-    <Button
-      type="primary"
-      onClick={() => setIsUploadModalOpen(true)}
-      disabled={!currentPath.length}
-      icon={<UploadOutlined />}
-    >
-      Upload Files
-    </Button>
-    <Button
-      type="default"
-      onClick={() => setIsUploadWithoutPartModalOpen(true)}
-      disabled={!currentPath.length}
-      icon={<UploadOutlined />}
-    >
-      Upload Without Part
-    </Button>
-  </div>
-</div>
-
+              <div className="flex justify-between items-center mb-4">
+                <Input
+                  placeholder="Search files and folders..."
+                  prefix={<SearchOutlined />}
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="w-44"
+                />
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+              type="primary"
+              icon={<PlusOutlined />}
+                    onClick={() => openModal(true)}
+            >
+                    New Folder
+            </Button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+                      type="primary"
+                      onClick={() => setIsUploadModalOpen(true)}
+                      disabled={!currentPath.length}
+                      icon={<UploadOutlined />}
+                    >
+                      Upload Files
+                    </Button>
+                    <Button
+              type="default"
+                      onClick={() => setIsUploadWithoutPartModalOpen(true)}
+                      disabled={!currentPath.length}
+              icon={<UploadOutlined />}
+            >
+                      Upload Without Part
+            </Button>
+          </div>
+                </div>
+              </div>
 
               {/* Folder content view */}
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {currentItems
-                    .filter(item => {
-                      // Apply search filter
-                      const matchesSearch = item.title.toString().toLowerCase().includes(searchText.toLowerCase());
-                      
-                      // Apply type filter
-                      if (fileTypeFilter === 'all' || !fileTypeFilter) return matchesSearch;
-                      if (fileTypeFilter === 'folder') return item.isFolder && matchesSearch;
-                      if (fileTypeFilter === 'pdf') return !item.isFolder && item.fileUrl?.toLowerCase().endsWith('.pdf') && matchesSearch;
-                      if (fileTypeFilter === 'image') {
-                        const ext = item.fileUrl?.toLowerCase().split('.').pop();
-                        return !item.isFolder && ['jpg', 'jpeg', 'png', 'gif'].includes(ext) && matchesSearch;
-                      }
-                      return matchesSearch;
-                    })
-                    .sort((a, b) => {
-                      // Always show folders first
-                      if (a.isFolder && !b.isFolder) return -1;
-                      if (!a.isFolder && b.isFolder) return 1;
-                      
-                      // Then sort by the selected field
-                      switch (sortField) {
-                        case 'title':
-                          const aTitle = (typeof a.title === 'string' ? a.title : '').toString();
-                          const bTitle = (typeof b.title === 'string' ? b.title : '').toString();
-                          return sortOrder === 'asc' 
-                            ? aTitle.localeCompare(bTitle)
-                            : bTitle.localeCompare(aTitle);
-                        
-                        case 'type':
-                          const aType = a.isFolder ? 'Folder' : (a.fileUrl?.split('.').pop() || '');
-                          const bType = b.isFolder ? 'Folder' : (b.fileUrl?.split('.').pop() || '');
-                          return sortOrder === 'asc'
-                            ? aType.localeCompare(bType)
-                            : bType.localeCompare(aType);
-                        
-                        case 'modified':
-                          const aDate = a.updated_at ? new Date(a.updated_at) : new Date(0);
-                          const bDate = b.updated_at ? new Date(b.updated_at) : new Date(0);
-                          return sortOrder === 'asc'
-                            ? aDate - bDate
-                            : bDate - aDate;
-                        
-                        default:
-                          return 0;
-                      }
-                    })
-                    .map(item => (
-                      <div
-                        key={item.key}
-                        className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 flex flex-col items-center text-center"
-                        onClick={() => item.isFolder ? handleFolderClick(item) : handleFileClick(item)}
-                      >
-                        {item.isFolder ? (
-                          <FolderFilled style={{ fontSize: '24px', color: '#ffd700' }} />
-                        ) : getFileIcon(item.fileUrl)}
-                        <span className="mt-2 text-sm truncate w-full">{item.title}</span>
-                      </div>
-                    ))}
-                </div>
+                  {currentItems.map(item => (
+                    <div
+                      key={item.key}
+                      className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 flex flex-col items-center text-center"
+                      onClick={() => item.isFolder ? handleFolderClick(item) : handleFileClick(item)}
+                    >
+                      {item.isFolder ? (
+                        <FolderFilled style={{ fontSize: '24px', color: '#ffd700' }} />
+                      ) : getFileIcon(item.fileUrl)}
+                      <span className="mt-2 text-sm truncate w-full">{item.title}</span>
+                    </div>
+                  ))}
+          </div>
               ) : (
                 <Table
                   columns={fileListColumns}
-                  dataSource={currentItems
-                    .filter(item => {
-                      // Apply search filter
-                      const matchesSearch = item.title.toString().toLowerCase().includes(searchText.toLowerCase());
-                      
-                      // Apply type filter
-                      if (fileTypeFilter === 'all' || !fileTypeFilter) return matchesSearch;
-                      if (fileTypeFilter === 'folder') return item.isFolder && matchesSearch;
-                      if (fileTypeFilter === 'pdf') return !item.isFolder && item.fileUrl?.toLowerCase().endsWith('.pdf') && matchesSearch;
-                      if (fileTypeFilter === 'image') {
-                        const ext = item.fileUrl?.toLowerCase().split('.').pop();
-                        return !item.isFolder && ['jpg', 'jpeg', 'png', 'gif'].includes(ext) && matchesSearch;
-                      }
-                      return matchesSearch;
-                    })
-                  }
-                  onChange={(pagination, filters, sorter) => {
-                    setSortField(sorter.field || 'title');
-                    setSortOrder(sorter.order === 'ascend' ? 'asc' : 'desc');
-                  }}
+                  dataSource={currentItems}
                   pagination={false}
-                  onRow={(record) => ({
-                    onClick: () => !record.isFolder && handleFileClick(record),
-                  })}
                 />
               )}
             </div>
@@ -1666,31 +1505,6 @@ const EnhancedDocumentUpload = () => {
           visible={isFileDetailsVisible}
           onClose={() => setIsFileDetailsVisible(false)}
         />
-
-      <Modal
-        title="Edit Validity Date"
-        open={isEditModalVisible}
-        onCancel={() => setIsEditModalVisible(false)}
-        onOk={handleUpdateValidityDate}
-        okText="Update"
-      >
-        <div className="space-y-4">
-          <div>
-            <p className="font-medium">File Name: {editingFile?.title}</p>
-            <p className="text-gray-600">
-              Part Numbers: {editingFile?.part_numbers?.join(', ') || '-'}
-            </p>
-          </div>
-          <div>
-            <p className="mb-2">New Validity Date:</p>
-            <DatePicker
-              value={newValidityDate ? dayjs(newValidityDate) : null}
-              onChange={(date) => setNewValidityDate(date)}
-              className="w-full"
-            />
-          </div>
-        </div>
-      </Modal>
       </div>
     </>
     );

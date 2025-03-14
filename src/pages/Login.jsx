@@ -1,95 +1,205 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
-import { LockIcon, Mail } from 'lucide-react';
+import { LockIcon, User2, ArrowRight } from 'lucide-react';
+import { message, Form, Input, Button, Select } from 'antd';
+import logo from '../assets/tata_power.png';
 import qs from 'qs';
 
-const LoginPage = () => {
-  const username = useRef();
-  const password = useRef();
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+const { Option } = Select;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const LoginPage = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('');
+  const [form] = Form.useForm();
+
+  // Role options
+  const roleOptions = [
+    { value: 'admin', label: 'Admin' },
+    { value: 'supervisor', label: 'Supervisor' },
+    { value: 'Data Management Associate', label: 'Data Management Associate' },
+    { value: 'user', label: 'User' }
+  ];
+
+  // Plant options
+  const plantOptions = [
+    { value: 'tps', label: 'Tata Power Solar' },
+    { value: 'tprel', label: 'Tata Power Renewable Energy Limited' }
+  ];
+
+  // Function to check if role requires plant selection
+  const doesRoleRequirePlant = (role) => {
+    return role === 'supervisor' || role === 'Data Management Associate';
+  };
+
+  // Handle role change
+  const handleRoleChange = (value) => {
+    setSelectedRole(value);
+    if (!doesRoleRequirePlant(value)) {
+      form.setFieldsValue({ plant: undefined }); // Clear plant selection
+    }
+  };
+
+  const handleSubmit = async (values) => {
+    setLoading(true);
     try {
-      const response = await axios.post('http://172.18.100.88:7001/auth', qs.stringify({
-        username: username.current.value,
-        password: password.current.value
-      }), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
+      // Create URL search params object
+      const params = new URLSearchParams();
+      params.append('username', values.username);
+      params.append('password', values.password);
+      params.append('role', values.role);
+      if (values.plant) {
+        params.append('plant', values.plant);
+      }
+
+      const response = await axios.post('http://127.0.0.1:7001/auth', 
+        params,
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
         }
-      });
-      // Handle the response (e.g., store token, redirect user)
-      console.log(response.data);
-      navigate('/dashboard'); // Redirect to the dashboard page
-    } catch (err) {
-      setError('Failed to log in. Please check your credentials and try again.');
+      );
+
+      if (response.data) {
+        localStorage.setItem('token', response.data.access_token);
+        localStorage.setItem('role', response.data.role);
+        if (response.data.plant) {
+          localStorage.setItem('plant', response.data.plant);
+        }
+        message.success('Login successful!');
+
+        // Redirect based on role
+        switch (values.role) {
+          case 'admin':
+            navigate('/tatapowerdoc/admin');
+            break;
+          case 'user':
+            navigate('/tatapowerdoc/user');
+            break;
+          case 'supervisor':
+          case 'Data Management Associate':
+            if (values.plant) {
+              navigate(`/tatapowerdoc/${values.plant}/dashboard`);
+            } else {
+              message.error('Plant selection is required for this role');
+            }
+            break;
+          default:
+            navigate('/tatapowerdoc');
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      message.error(error.response?.data?.detail || 'Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white p-8 rounded-md shadow-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Log in to your account</h2>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="username" className="sr-only">Username</label>
-              <div className="flex">
-                <Mail className="h-5 w-5 text-gray-500 mr-2 mt-2" />
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  autoComplete="username"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Username"
-                  ref={username}
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">Password</label>
-              <div className="flex mt-4">
-                <LockIcon className="h-5 w-5 text-gray-500 mr-2" />
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Password"
-                  ref={password}
-                />
-              </div>
-            </div>
-          </div>
-
-          {error && <div className="text-red-500 text-sm">{error}</div>}
-
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500">Forgot your password?</a>
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Log In
-            </button>
-          </div>
-        </form>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Don't have an account? <Link to="/tatapowerdoc/signup" className="font-medium text-indigo-600 hover:text-indigo-500">Sign Up</Link>
-        </p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col items-center">
+        <img
+          src={logo}
+          alt="Tata Power Solar Logo"
+          className="w-64 h-auto mb-4"
+        />
+        
       </div>
+      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-lg mb-14">
+        <h2 className="text-center text-2xl font-bold text-gray-900 font-sans mb-8">Sign In</h2>
+        
+        <Form
+          form={form}
+          name="login"
+          onFinish={handleSubmit}
+          layout="vertical"
+          requiredMark={false}
+        >
+          <Form.Item
+            name="username"
+            rules={[{ required: true, message: 'Please input your username!' }]}
+          >
+            <Input
+              prefix={<User2 className="text-gray-400" />}
+              placeholder="Username"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="password"
+            rules={[{ required: true, message: 'Please input your password!' }]}
+          >
+            <Input.Password
+              prefix={<LockIcon className="text-gray-400" />}
+              placeholder="Password"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="role"
+            rules={[{ required: true, message: 'Please select your role!' }]}
+          >
+            <Select
+              placeholder="Select Role"
+              onChange={handleRoleChange}
+              size="large"
+            >
+              {roleOptions.map(option => (
+                <Option key={option.value} value={option.value}>{option.label}</Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          {doesRoleRequirePlant(selectedRole) && (
+            <Form.Item
+              name="plant"
+              rules={[{ required: true, message: 'Please select your plant!' }]}
+            >
+              <Select
+                placeholder="Select Plant"
+                size="large"
+              >
+                {plantOptions.map(option => (
+                  <Option key={option.value} value={option.value}>{option.label}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+
+          <Form.Item>
+            <Button
+              type="primary"
+              htmlType="submit"
+              className="w-full"
+              size="large"
+              loading={loading}
+            >
+              {loading ? 'Logging in...' : 'Log In'}
+            </Button>
+          </Form.Item>
+        </Form>
+
+        <div className="mt-6">
+          <p className="text-center text-sm text-gray-600">
+            Don't have an account?{' '}
+            <Link to="/tatapowerdoc/signup" className="font-medium text-green-600 hover:text-green-500">
+              Sign Up
+            </Link>
+          </p>
+        </div>
+        <Link 
+          to="/tatapowerdoc/aboutus" 
+          className="text-green-600 hover:text-green-500 mt-3 ml-28 flex items-center gap-2"
+        >
+          Learn more about us <ArrowRight size={16} />
+        </Link>
+      </div>
+      
     </div>
   );
 };

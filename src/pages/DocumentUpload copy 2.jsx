@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Tree, Input, Button, Upload, Select, Table, Modal, message, Switch, Form, Layout, Card, Tabs, Breadcrumb, Tooltip, Dropdown, Menu, Space, DatePicker, List, Typography } from 'antd';
-import { DownOutlined, FolderOutlined, FileOutlined, PlusOutlined, UploadOutlined, SearchOutlined, SortAscendingOutlined, SortDescendingOutlined, InfoCircleOutlined, HomeOutlined, DownloadOutlined, FolderFilled, FilePdfFilled, FileImageFilled, UnorderedListOutlined, AppstoreOutlined, CloseOutlined, InboxOutlined , EditOutlined} from '@ant-design/icons';
+import { DownOutlined, FolderOutlined, FileOutlined, PlusOutlined, UploadOutlined, SearchOutlined, SortAscendingOutlined, SortDescendingOutlined, InfoCircleOutlined, HomeOutlined, DownloadOutlined, FolderFilled, FilePdfFilled, FileImageFilled, UnorderedListOutlined, AppstoreOutlined, CloseOutlined  } from '@ant-design/icons';
 import axios from 'axios';
 import { Eye } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import moment from 'moment';
 import * as XLSX from 'xlsx';
-import dayjs from "dayjs";
-
 
 const { TreeNode } = Tree;
 const { Dragger } = Upload;
@@ -39,7 +37,6 @@ const EnhancedDocumentUpload = () => {
   const [searchText, setSearchText] = useState('');
   const [sortOrder, setSortOrder] = useState('asc');
   const [sortField, setSortField] = useState('title');
-  const [fileTypeFilter, setFileTypeFilter] = useState('all');
   const [currentPath, setCurrentPath] = useState([]);
   const [fileDetails, setFileDetails] = useState([]);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
@@ -52,20 +49,12 @@ const EnhancedDocumentUpload = () => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const {plant} = useParams();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isUploadWithoutPartModalOpen, setIsUploadWithoutPartModalOpen] = useState(false);
   const [uploadedFileList, setUploadedFileList] = useState([]);
   const [currentFileDetails, setCurrentFileDetails] = useState(null);
   const [fileDetailsModalVisible, setFileDetailsModalVisible] = useState(false);
   const [previewData, setPreviewData] = useState([]);
   const [customPartNumbers, setCustomPartNumbers] = useState('');
-  const [excelPartNumbers, setExcelPartNumbers] = useState([]);
-  const [showExcelPreview, setShowExcelPreview] = useState(false);
   const [fileDetailsForm] = Form.useForm();
-  const [existingFiles, setExistingFiles] = useState([]);
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [editingFile, setEditingFile] = useState(null);
-  const [newValidityDate, setNewValidityDate] = useState(null);
 
   useEffect(() => {
     axios
@@ -81,19 +70,6 @@ const EnhancedDocumentUpload = () => {
         setLoading(false);
       });
   }, []);
-
-  useEffect(() => {
-    const fetchExistingFiles = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/documents?plant=${plant}`);
-        setExistingFiles(response.data);
-      } catch (error) {
-        console.error('Error fetching existing files:', error);
-        message.error('Failed to fetch existing files');
-      }
-    };
-    fetchExistingFiles();
-  }, [plant]);
 
   useEffect(() => {
     const fetchExistingFiles = async () => {
@@ -486,18 +462,16 @@ const EnhancedDocumentUpload = () => {
       title: 'Validity Date',
       dataIndex: 'validity_date',
       key: 'validity_date',
-      render: (date) => date ? moment(date).format('YYYY-MM-DD') : '-'    },
+      render: (date) => date || '-'
+    },
     {
       title: 'Action',
       key: 'action',
       render: (_, record) => (
-        <>
         <Button
           type="primary"
           icon={<Eye size={16} />}
-          style={{marginRight:'6px'}}
-          onClick={(e) => {
-            e.stopPropagation();
+          onClick={() => {
             setFileDetails({
               title: record.title,
               fileUrl: record.fileUrl,
@@ -510,19 +484,6 @@ const EnhancedDocumentUpload = () => {
         >
           View
         </Button>
-         <Button
-         type="default"
-         icon={<EditOutlined size={16} />  }
-         onClick={(e) => {
-           e.stopPropagation();
-           setEditingFile(record);
-           setNewValidityDate(record.validity_date ? moment(record.validity_date) : null);
-           setIsEditModalVisible(true);
-         }}
-       >
-         Edit
-       </Button>
-       </>
       ),
     },
   ];
@@ -573,34 +534,6 @@ const EnhancedDocumentUpload = () => {
         });
       }
       setCurrentPath(newPath);
-    }
-  };
-
-  const handleUpdateValidityDate = async () => {
-    try {
-      if (!newValidityDate) {
-        message.error('Please select a new validity date');
-        return;
-      }
-
-      const response = await axios.put(`${API_URL}/update-documents-validity/`, {
-        file_name: editingFile.title,
-        validity_date: newValidityDate.format('YYYY-MM-DD'),
-        plant: plant,
-        part_numbers: editingFile.part_numbers
-      }, {
-        headers: { "Content-Type": "application/json" } // Ensure JSON format
-      });
-      
-
-      if (response.data) {
-        message.success('Validity date updated successfully');
-        setIsEditModalVisible(false);
-         
-        await fetchFolderData();
-      }
-    } catch (error) {
-      message.error(error.response?.data?.detail || 'Failed to update validity date');
     }
   };
 
@@ -675,9 +608,9 @@ const EnhancedDocumentUpload = () => {
 
         if (response.status === 200 || response.status === 201) {
           message.success('Folder created successfully');
-        await fetchFolderData();
-        setIsModalOpen(false);
-        form.resetFields();
+          await fetchFolderData();
+          setIsModalOpen(false);
+          form.resetFields();
         } else {
           message.error('Failed to create folder');
         }
@@ -685,7 +618,7 @@ const EnhancedDocumentUpload = () => {
         console.error('Error creating folder:', error);
         if (error.response && error.response.data) {
           message.error(error.response.data.detail || 'Error creating folder');
-    } else {
+        } else {
           message.error('An unexpected error occurred while creating the folder');
         }
       }
@@ -693,230 +626,51 @@ const EnhancedDocumentUpload = () => {
 
   const handleConfirmUpload = async () => {
     try {
-      // Separate existing files and new files
-      const existingFiles = previewData.filter(item => item.file.isExisting);
-      const newFiles = previewData.filter(item => !item.file.isExisting);
+      const formData = new FormData();
+      
+      // Add files to FormData
+      previewData.forEach((item) => {
+        formData.append('files', item.file.originFileObj);
+      });
 
-      // Handle existing files
-      if (existingFiles.length > 0) {
-        const existingFilesData = {
-          folder_id: currentFolderId,
-          plant: plant,
-          part_numbers: customPartNumbers,
-          validity_date: existingFiles[0].validityDate,
-          files: existingFiles.map(item => ({
-            file_name: item.fileName,
-            file_path: item.file.url
-          }))
-        };
+      // Add other data as query parameters
+      const queryParams = new URLSearchParams({
+        folder_id: currentFolderId,
+        plant: plant,
+        validity_date: previewData.map(item => item.validityDate).join(','),
+        file_name: previewData.map(item => item.fileName).join(','),
+        part_numbers: previewData[0].partNumbers.join(','),
+      });
 
-        await axios.post(`${API_URL}/associate-existing-files/`, existingFilesData);
-      }
-
-      // Handle new files
-      if (newFiles.length > 0) {
-        const formData = new FormData();
-        
-        // Add new files to FormData
-        newFiles.forEach((item) => {
-          formData.append('files', item.file.originFileObj);
-        });
-
-        // Add other data as query parameters
-        const queryParams = new URLSearchParams({
-          folder_id: currentFolderId,
-          plant: plant,
-          validity_date: newFiles.map(item => item.validityDate).join(','),
-          file_name: newFiles.map(item => item.fileName).join(','),
-          part_numbers: customPartNumbers,
-        });
-
-        await axios.post(
-          `${API_URL}/upload-file/?${queryParams.toString()}`,
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
+      const response = await axios.post(
+        `${API_URL}/upload-file/?${queryParams.toString()}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
         }
-
-      message.success('Files uploaded successfully');
-      setPreviewData([]);
-      setUploadedFileList([]);
-      setCustomPartNumbers('');
-      // Refresh the folder contents
-        await fetchFolderData();
-      
-      } catch (error) {
-      console.error('Upload error:', error);
-      message.error('Failed to upload files: ' + (error.response?.data?.detail || error.message));
-    }
-  };
-
-  const handleExcelUpload = (file) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-      
-      // Extract part numbers from 'Part code' column
-      const partNumbers = jsonData
-        .map(row => row['Part code'])
-        .filter(code => code) // Remove empty/undefined values
-        .join(',');
-      
-      setCustomPartNumbers(partNumbers);
-      setExcelPartNumbers(jsonData.map(row => row['Part code']).filter(code => code));
-      setShowExcelPreview(true);
-    };
-    reader.readAsArrayBuffer(file);
-    return false; // Prevent default upload behavior
-  };
-
-  // Add new function to handle upload without part number modal
-  const handleUploadWithoutPart = ({ fileList }) => {
-    setUploadedFileList(fileList);
-    if (fileList.length > 0) {
-      setCurrentFileIndex(0);
-      setFileDetails(prev => ({
-        ...prev,
-        [fileList[0].uid]: {
-          fileName: fileList[0].name,
-          validityDate: null
-        }
-      }));
-    }
-  };
-
-  const handleFileNameChange = (uid, value) => {
-    setFileDetails(prev => ({
-      ...prev,
-      [uid]: {
-        ...prev[uid],
-        fileName: value
-      }
-    }));
-  };
-
-  const handleValidityDateChange = (uid, date) => {
-    setFileDetails(prev => ({
-      ...prev,
-      [uid]: {
-        ...prev[uid],
-        validityDate: date
-      }
-    }));
-  };
-
-  const handleConfirmUploadWithoutPart = async () => {
-    try {
-      // Validate required data
-      if (!currentFolderId) {
-        message.error('No folder selected');
-        return;
-      }
-
-      // Validate that all files have required details
-      const isValid = uploadedFileList.every(file => 
-        fileDetails[file.uid]?.fileName && fileDetails[file.uid]?.validityDate
       );
 
-      if (!isValid) {
-        message.error('Please provide file name and validity date for all files');
-      return;
-    }
-
-      // Separate existing files and new files
-      const existingFiles = uploadedFileList.filter(file => file.isExisting);
-      const newFiles = uploadedFileList.filter(file => !file.isExisting);
-
-      // Handle existing files
-      if (existingFiles.length > 0) {
-        const existingFilesData = {
-          folder_id: currentFolderId,
-          plant: plant,
-          part_numbers: '',
-          validity_date: fileDetails[existingFiles[0].uid].validityDate.format('YYYY-MM-DD'),
-          files: existingFiles.map(file => ({
-            file_name: fileDetails[file.uid].fileName,
-            file_path: file.url
-          }))
-        };
-
-        await axios.post(`${API_URL}/associate-existing-files/`, existingFilesData);
+      if (response.status === 200) {
+        message.success('Files uploaded successfully');
+        setPreviewData([]);
+        // Refresh the folder contents
+        await fetchFolderData();
       }
-
-      // Handle new files
-      if (newFiles.length > 0) {
-        const formData = new FormData();
-        
-        // Add new files to FormData
-        newFiles.forEach(file => {
-          formData.append('files', file.originFileObj);
-        });
-
-        // Add other data as query parameters
-        const queryParams = new URLSearchParams({
-          folder_id: currentFolderId,
-          plant: plant,
-          validity_date: newFiles.map(file => 
-            fileDetails[file.uid].validityDate.format('YYYY-MM-DD')
-          ).join(','),
-          file_name: newFiles.map(file => 
-            fileDetails[file.uid].fileName
-          ).join(','),
-          part_numbers: ''
-        });
-
-        await axios.post(
-          `${API_URL}/upload-file/?${queryParams.toString()}`,
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
-      }
-
-      message.success('Files uploaded successfully');
-      setUploadedFileList([]);
-      setFileDetails({});
-      setCurrentFileIndex(0);
-      setIsUploadWithoutPartModalOpen(false);
-      setIsPreviewModalOpen(false);
-      // Refresh the folder contents
-      await fetchFolderData();
     } catch (error) {
       console.error('Upload error:', error);
-      message.error('Failed to upload files: ' + (error.response?.data?.detail || error.message));
+      message.error('Failed to upload files');
     }
   };
-
-  const handleFileClick = (item) => {
-    const fileDetails = {
-      title: item.title,
-      fileUrl: item.fileUrl,
-      fileType: item.fileUrl?.split('.').pop().toLowerCase(),
-      part_numbers: item.part_numbers,
-      validity_date: item.validity_date
-    };
-    
-    // Update the selected file details in the card
-    setSelectedFolderFiles([fileDetails]);
-  };
-
-  return (
+  
+    return (
     <>
       <div className="flex flex-col gap-6 p-6">
         <div className="flex gap-6">
           <Card className="w-1/2">
             <div className="mb-6">
-              <h1 className="text-2xl font-bold mb-4">File Explorer</h1>
+              <h1 className="text-2xl font-bold mb-4">Folder Explorer</h1>
               
               <div className="flex justify-between items-center mb-4">
                 <Breadcrumb>
@@ -938,7 +692,11 @@ const EnhancedDocumentUpload = () => {
                 </Breadcrumb>
 
                 <Space>
-            
+                  <Button
+                    icon={<UnorderedListOutlined />}
+                    type={viewMode === 'list' ? 'primary' : 'default'}
+                    onClick={() => setViewMode('list')}
+                  />
                   <Button
                     icon={<AppstoreOutlined />}
                     type={viewMode === 'grid' ? 'primary' : 'default'}
@@ -947,163 +705,58 @@ const EnhancedDocumentUpload = () => {
                 </Space>
               </div>
 
-              <div className="flex flex-col gap-4 mb-4">
-  {/* Search, Sort, and Filter Row */}
-  <div className="flex flex-wrap items-center gap-4">
-    <Input
-      placeholder="Search files and folders..."
-      prefix={<SearchOutlined />}
-      value={searchText}
-      onChange={(e) => setSearchText(e.target.value)}
-      className="w-44"
-      allowClear
-    />
-    <Select
-      placeholder="Sort by"
-      value={sortField}
-      onChange={setSortField}
-      className="w-32"
-    >
-      <Option value="title">Name</Option>
-      <Option value="type">Type</Option>
-      <Option value="modified">Modified</Option>
-    </Select>
-    <Button
-      icon={sortOrder === 'asc' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
-      onClick={() => setSortOrder(order => order === 'asc' ? 'desc' : 'asc')}
-    />
-    <Select
-      placeholder="Filter by type"
-      className="w-32"
-      allowClear
-      onChange={(value) => setFileTypeFilter(value)}
-    >
-      <Option value="all">All Types</Option>
-      <Option value="folder">Folders</Option>
-      <Option value="pdf">PDF</Option>
-      <Option value="image">Images</Option>
-    </Select>
-  </div>
-
-  {/* Buttons Row */}
-  <div className="flex flex-wrap gap-2">
-    <Button
-      type="primary"
-      icon={<PlusOutlined />}
-      onClick={() => openModal(true)}
-    >
-      New Folder
-    </Button>
-    <Button
-      type="primary"
-      onClick={() => setIsUploadModalOpen(true)}
-      disabled={!currentPath.length}
-      icon={<UploadOutlined />}
-    >
-      Upload Files
-    </Button>
-    <Button
-      type="default"
-      onClick={() => setIsUploadWithoutPartModalOpen(true)}
-      disabled={!currentPath.length}
-      icon={<UploadOutlined />}
-    >
-      Upload Without Part
-    </Button>
-  </div>
-</div>
-
+              <div className="flex justify-between items-center mb-4">
+                <Input
+                  placeholder="Search files and folders..."
+                  prefix={<SearchOutlined />}
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="w-64"
+                />
+                <Space>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+                    onClick={() => openModal(true)}
+            >
+                    New Folder
+            </Button>
+            <Button
+              icon={<UploadOutlined />}
+                    onClick={() => {
+                      if (!currentFolderId) {
+                        message.warning('Please navigate to a folder first');
+                        return;
+                      }
+                      setIsUploadModalOpen(true);
+                    }}
+                  >
+                    Upload Files
+            </Button>
+                </Space>
+              </div>
 
               {/* Folder content view */}
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {currentItems
-                    .filter(item => {
-                      // Apply search filter
-                      const matchesSearch = item.title.toString().toLowerCase().includes(searchText.toLowerCase());
-                      
-                      // Apply type filter
-                      if (fileTypeFilter === 'all' || !fileTypeFilter) return matchesSearch;
-                      if (fileTypeFilter === 'folder') return item.isFolder && matchesSearch;
-                      if (fileTypeFilter === 'pdf') return !item.isFolder && item.fileUrl?.toLowerCase().endsWith('.pdf') && matchesSearch;
-                      if (fileTypeFilter === 'image') {
-                        const ext = item.fileUrl?.toLowerCase().split('.').pop();
-                        return !item.isFolder && ['jpg', 'jpeg', 'png', 'gif'].includes(ext) && matchesSearch;
-                      }
-                      return matchesSearch;
-                    })
-                    .sort((a, b) => {
-                      // Always show folders first
-                      if (a.isFolder && !b.isFolder) return -1;
-                      if (!a.isFolder && b.isFolder) return 1;
-                      
-                      // Then sort by the selected field
-                      switch (sortField) {
-                        case 'title':
-                          const aTitle = (typeof a.title === 'string' ? a.title : '').toString();
-                          const bTitle = (typeof b.title === 'string' ? b.title : '').toString();
-                          return sortOrder === 'asc' 
-                            ? aTitle.localeCompare(bTitle)
-                            : bTitle.localeCompare(aTitle);
-                        
-                        case 'type':
-                          const aType = a.isFolder ? 'Folder' : (a.fileUrl?.split('.').pop() || '');
-                          const bType = b.isFolder ? 'Folder' : (b.fileUrl?.split('.').pop() || '');
-                          return sortOrder === 'asc'
-                            ? aType.localeCompare(bType)
-                            : bType.localeCompare(aType);
-                        
-                        case 'modified':
-                          const aDate = a.updated_at ? new Date(a.updated_at) : new Date(0);
-                          const bDate = b.updated_at ? new Date(b.updated_at) : new Date(0);
-                          return sortOrder === 'asc'
-                            ? aDate - bDate
-                            : bDate - aDate;
-                        
-                        default:
-                          return 0;
-                      }
-                    })
-                    .map(item => (
-                      <div
-                        key={item.key}
-                        className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 flex flex-col items-center text-center"
-                        onClick={() => item.isFolder ? handleFolderClick(item) : handleFileClick(item)}
-                      >
-                        {item.isFolder ? (
-                          <FolderFilled style={{ fontSize: '24px', color: '#ffd700' }} />
-                        ) : getFileIcon(item.fileUrl)}
-                        <span className="mt-2 text-sm truncate w-full">{item.title}</span>
-                      </div>
-                    ))}
-                </div>
+                  {currentItems.map(item => (
+                    <div
+                      key={item.key}
+                      className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 flex flex-col items-center text-center"
+                      onClick={() => item.isFolder ? handleFolderClick(item) : handleFileClick(item)}
+                    >
+                      {item.isFolder ? (
+                        <FolderFilled style={{ fontSize: '24px', color: '#ffd700' }} />
+                      ) : getFileIcon(item.fileUrl)}
+                      <span className="mt-2 text-sm truncate w-full">{item.title}</span>
+                    </div>
+                  ))}
+          </div>
               ) : (
                 <Table
                   columns={fileListColumns}
-                  dataSource={currentItems
-                    .filter(item => {
-                      // Apply search filter
-                      const matchesSearch = item.title.toString().toLowerCase().includes(searchText.toLowerCase());
-                      
-                      // Apply type filter
-                      if (fileTypeFilter === 'all' || !fileTypeFilter) return matchesSearch;
-                      if (fileTypeFilter === 'folder') return item.isFolder && matchesSearch;
-                      if (fileTypeFilter === 'pdf') return !item.isFolder && item.fileUrl?.toLowerCase().endsWith('.pdf') && matchesSearch;
-                      if (fileTypeFilter === 'image') {
-                        const ext = item.fileUrl?.toLowerCase().split('.').pop();
-                        return !item.isFolder && ['jpg', 'jpeg', 'png', 'gif'].includes(ext) && matchesSearch;
-                      }
-                      return matchesSearch;
-                    })
-                  }
-                  onChange={(pagination, filters, sorter) => {
-                    setSortField(sorter.field || 'title');
-                    setSortOrder(sorter.order === 'ascend' ? 'asc' : 'desc');
-                  }}
+                  dataSource={currentItems}
                   pagination={false}
-                  onRow={(record) => ({
-                    onClick: () => !record.isFolder && handleFileClick(record),
-                  })}
                 />
               )}
             </div>
@@ -1181,13 +834,12 @@ const EnhancedDocumentUpload = () => {
                   title: 'Part Numbers',
                   dataIndex: 'partNumbers',
                   key: 'partNumbers',
-                  render: (partNumbers) => partNumbers ? partNumbers.join(', ') : '-'
+                  render: (partNumbers) => partNumbers.join(', '),
                 },
                 {
                   title: 'Validity Date',
                   dataIndex: 'validityDate',
                   key: 'validityDate',
-                  render: (date) => date ? moment(date).format('YYYY-MM-DD') : '-'
                 },
               ]}
               dataSource={previewData}
@@ -1209,114 +861,32 @@ const EnhancedDocumentUpload = () => {
           width={800}
         >
           <Form layout="vertical">
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Custom Part Numbers (comma-separated)
-              </label>
-              <Input.TextArea
+            <Form.Item label="Custom Part Numbers">
+              <Input 
+                placeholder="Enter comma-separated part numbers"
                 value={customPartNumbers}
                 onChange={(e) => setCustomPartNumbers(e.target.value)}
-                placeholder="Enter part numbers separated by commas"
-                className="mb-2"
               />
-              <Upload
-                accept=".xlsx,.xls"
-                beforeUpload={handleExcelUpload}
+            </Form.Item>
+            <Form.Item label="Upload Files">
+              <Upload.Dragger
+                multiple
+                fileList={uploadedFileList}
+                beforeUpload={() => false}
+                onChange={({ fileList }) => setUploadedFileList(fileList)}
+                accept=".pdf,.jpg,.jpeg,.png"
                 showUploadList={false}
               >
-                <Button icon={<UploadOutlined />} className="w-full">
-                  Upload Excel File
-                </Button>
-              </Upload>
-            </div>
+                <p className="ant-upload-drag-icon">
+                  <UploadOutlined />
+                </p>
+                <p className="ant-upload-text">Click or drag files to upload</p>
+                <p className="ant-upload-hint">
+                  Support for multiple files. Only PDF, JPEG, and PNG files.
+                </p>
+              </Upload.Dragger>
+            </Form.Item>
 
-            {showExcelPreview && excelPartNumbers.length > 0 && (
-              <div className="mb-4">
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="text-sm font-medium text-gray-700">Extracted Part Numbers</h4>
-                    <Button 
-                      type="text" 
-                      icon={<CloseOutlined />} 
-                      onClick={() => {
-                        setShowExcelPreview(false);
-                        setExcelPartNumbers([]);
-                      }}
-                    />
-                  </div>
-                  <List
-                    size="small"
-                    bordered
-                    dataSource={excelPartNumbers}
-                    renderItem={item => (
-                      <List.Item>
-                        <Typography.Text>{item}</Typography.Text>
-                      </List.Item>
-                    )}
-                    style={{ maxHeight: '200px', overflow: 'auto' }}
-                  />
-                </div>
-              </div>
-            )}
-
-            <Form.Item label="Upload Files">
-              <div className="space-y-4">
-                <Upload.Dragger
-                  multiple
-                  fileList={uploadedFileList}
-                  beforeUpload={() => false}
-                  onChange={({ fileList }) => setUploadedFileList(fileList)}
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  showUploadList={false}
-                >
-                  <p className="ant-upload-drag-icon">
-                    <UploadOutlined />
-                  </p>
-                  <p className="ant-upload-text">Click or drag files to upload</p>
-                  <p className="ant-upload-hint">
-                    Support for multiple files. Only PDF, JPEG, and PNG files.
-                  </p>
-                </Upload.Dragger>
-
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Or Select Existing Files
-                  </label>
-                    <Select
-                      mode="multiple"
-                      style={{ width: '100%' }}
-                    placeholder="Select existing files"
-                    onChange={(values) => {
-                      const selectedFiles = existingFiles
-                        .filter(file => values.includes(file.id))
-                        .map(file => ({
-                          uid: `existing-${file.id}`,
-                          name: file.file_name,
-                          status: 'done',
-                          url: file.file_path,
-                          isExisting: true,
-                          originFileObj: null
-                        }));
-                      setUploadedFileList(prev => {
-                        const nonExistingFiles = prev.filter(f => !f.isExisting);
-                        return [...nonExistingFiles, ...selectedFiles];
-                      });
-                    }}
-                    optionFilterProp="children"
-                    filterOption={(input, option) =>
-                      option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                    }
-                  >
-                    {existingFiles.map(file => (
-                      <Option key={file.id} value={file.id}>
-                        {file.file_name}
-                        </Option>
-                      ))}
-                    </Select>
-                </div>
-              </div>
-                  </Form.Item>
-  
             {/* File Details List */}
             {uploadedFileList.length > 0 && (
               <div className="mt-4">
@@ -1339,13 +909,13 @@ const EnhancedDocumentUpload = () => {
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                      <Form.Item
+                        <Form.Item
                           label="File Name"
                           required
                           validateStatus={file.fileName ? 'success' : 'error'}
                           help={!file.fileName && 'Please enter file name'}
-                      >
-                        <Input 
+                        >
+                          <Input
                             placeholder="Enter file name"
                             value={file.fileName}
                             onChange={(e) => {
@@ -1356,11 +926,11 @@ const EnhancedDocumentUpload = () => {
                               };
                               setUploadedFileList(newFileList);
                             }}
-                        />
-                      </Form.Item>
-                  <Form.Item 
+                          />
+                        </Form.Item>
+                        <Form.Item
                           label="Validity Date"
-                    required
+                          required
                           validateStatus={file.validityDate ? 'success' : 'error'}
                           help={!file.validityDate && 'Please select validity date'}
                         >
@@ -1377,7 +947,7 @@ const EnhancedDocumentUpload = () => {
                             }}
                             disabledDate={(current) => current && current < moment().startOf('day')}
                           />
-                  </Form.Item>
+                        </Form.Item>
                       </div>
                     </Card>
                   ))}
@@ -1434,134 +1004,8 @@ const EnhancedDocumentUpload = () => {
                   Clear All
                 </Button>
               </Space>
-              </Form.Item>
-            </Form>
-          </Modal>
-
-        {/* Upload Without Part Number Modal */}
-        <Modal
-          title="Upload Files Without Part Number"
-          open={isUploadWithoutPartModalOpen}
-          onCancel={() => setIsUploadWithoutPartModalOpen(false)}
-          footer={null}
-          width={800}
-        >
-          <div className="space-y-4">
-            <Upload.Dragger
-              multiple
-              fileList={uploadedFileList}
-              onChange={handleUploadWithoutPart}
-              beforeUpload={() => false}
-              accept=".pdf,.jpg,.jpeg,.png"
-            >
-              <p className="ant-upload-drag-icon">
-                <InboxOutlined />
-              </p>
-              <p className="ant-upload-text">Click or drag files to upload</p>
-              <p className="ant-upload-hint">Support for PDF, JPG, JPEG, PNG</p>
-            </Upload.Dragger>
-
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Or Select Existing Files
-              </label>
-              <Select
-                mode="multiple"
-                style={{ width: '100%' }}
-                placeholder="Select existing files"
-                onChange={(values) => {
-                  const selectedFiles = existingFiles
-                    .filter(file => values.includes(file.id))
-                    .map(file => ({
-                      uid: `existing-${file.id}`,
-                      name: file.file_name,
-                      status: 'done',
-                      url: file.file_path,
-                      isExisting: true,
-                      originFileObj: null
-                    }));
-                  setUploadedFileList(prev => {
-                    const nonExistingFiles = prev.filter(f => !f.isExisting);
-                    return [...nonExistingFiles, ...selectedFiles];
-                  });
-                }}
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }
-              >
-                {existingFiles.map(file => (
-                  <Option key={file.id} value={file.id}>
-                    {file.file_name}
-                  </Option>
-                ))}
-              </Select>
-        </div>
-  
-            {uploadedFileList.length > 0 && (
-              <div className="mt-4">
-                <div className="flex justify-between items-center mb-4">
-                  <span>Current File: {uploadedFileList[currentFileIndex]?.name}</span>
-                  <div className="space-x-2">
-              <Button 
-                      onClick={() => setCurrentFileIndex(prev => Math.max(0, prev - 1))}
-                      disabled={currentFileIndex === 0}
-              >
-                      Previous
-              </Button>
-                    <Button
-                      onClick={() => setCurrentFileIndex(prev => Math.min(uploadedFileList.length - 1, prev + 1))}
-                      disabled={currentFileIndex === uploadedFileList.length - 1}
-                    >
-                      Next
-                    </Button>
-          </div>
-                </div>
-
-                <Form layout="vertical">
-                  <Form.Item label="File Name" required>
-                    <Input
-                      value={fileDetails[uploadedFileList[currentFileIndex]?.uid]?.fileName || ''}
-                      onChange={(e) => handleFileNameChange(uploadedFileList[currentFileIndex]?.uid, e.target.value)}
-                    />
-                  </Form.Item>
-                  <Form.Item label="Validity Date" required>
-                    <DatePicker
-                      value={fileDetails[uploadedFileList[currentFileIndex]?.uid]?.validityDate}
-                      onChange={(date) => handleValidityDateChange(uploadedFileList[currentFileIndex]?.uid, date)}
-                      disabledDate={(current) => current && current < moment().endOf('day')}
-                      style={{ width: '100%' }}
-                    />
-                  </Form.Item>
-                </Form>
-
-                <div className="flex justify-end space-x-2 mt-4">
-                  <Button onClick={() => {
-                    setUploadedFileList([]);
-                    setFileDetails({});
-                    setCurrentFileIndex(0);
-                  }}>
-                    Clear All
-                  </Button>
-                  <Button type="primary" onClick={() => {
-                    // Validate all files have required details
-                    const isValid = uploadedFileList.every(file => 
-                      fileDetails[file.uid]?.fileName && fileDetails[file.uid]?.validityDate
-                    );
-
-                    if (!isValid) {
-                      message.error('Please provide file name and validity date for all files');
-                      return;
-                    }
-
-                    handleConfirmUploadWithoutPart();
-                  }}>
-                    Upload
-                  </Button>
-      </div>
-    </div>
-            )}
-          </div>
+            </Form.Item>
+          </Form>
         </Modal>
 
         {/* File Details Modal */}
@@ -1666,31 +1110,6 @@ const EnhancedDocumentUpload = () => {
           visible={isFileDetailsVisible}
           onClose={() => setIsFileDetailsVisible(false)}
         />
-
-      <Modal
-        title="Edit Validity Date"
-        open={isEditModalVisible}
-        onCancel={() => setIsEditModalVisible(false)}
-        onOk={handleUpdateValidityDate}
-        okText="Update"
-      >
-        <div className="space-y-4">
-          <div>
-            <p className="font-medium">File Name: {editingFile?.title}</p>
-            <p className="text-gray-600">
-              Part Numbers: {editingFile?.part_numbers?.join(', ') || '-'}
-            </p>
-          </div>
-          <div>
-            <p className="mb-2">New Validity Date:</p>
-            <DatePicker
-              value={newValidityDate ? dayjs(newValidityDate) : null}
-              onChange={(date) => setNewValidityDate(date)}
-              className="w-full"
-            />
-          </div>
-        </div>
-      </Modal>
       </div>
     </>
     );

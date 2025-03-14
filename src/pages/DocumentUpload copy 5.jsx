@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Tree, Input, Button, Upload, Select, Table, Modal, message, Switch, Form, Layout, Card, Tabs, Breadcrumb, Tooltip, Dropdown, Menu, Space, DatePicker, List, Typography } from 'antd';
-import { DownOutlined, FolderOutlined, FileOutlined, PlusOutlined, UploadOutlined, SearchOutlined, SortAscendingOutlined, SortDescendingOutlined, InfoCircleOutlined, HomeOutlined, DownloadOutlined, FolderFilled, FilePdfFilled, FileImageFilled, UnorderedListOutlined, AppstoreOutlined, CloseOutlined, InboxOutlined , EditOutlined} from '@ant-design/icons';
+import { DownOutlined, FolderOutlined, FileOutlined, PlusOutlined, UploadOutlined, SearchOutlined, SortAscendingOutlined, SortDescendingOutlined, InfoCircleOutlined, HomeOutlined, DownloadOutlined, FolderFilled, FilePdfFilled, FileImageFilled, UnorderedListOutlined, AppstoreOutlined, CloseOutlined, InboxOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { Eye } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import moment from 'moment';
 import * as XLSX from 'xlsx';
-import dayjs from "dayjs";
-
 
 const { TreeNode } = Tree;
 const { Dragger } = Upload;
@@ -63,9 +61,6 @@ const EnhancedDocumentUpload = () => {
   const [fileDetailsForm] = Form.useForm();
   const [existingFiles, setExistingFiles] = useState([]);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [editingFile, setEditingFile] = useState(null);
-  const [newValidityDate, setNewValidityDate] = useState(null);
 
   useEffect(() => {
     axios
@@ -486,16 +481,15 @@ const EnhancedDocumentUpload = () => {
       title: 'Validity Date',
       dataIndex: 'validity_date',
       key: 'validity_date',
-      render: (date) => date ? moment(date).format('YYYY-MM-DD') : '-'    },
+      render: (date) => date || '-'
+    },
     {
       title: 'Action',
       key: 'action',
       render: (_, record) => (
-        <>
         <Button
           type="primary"
           icon={<Eye size={16} />}
-          style={{marginRight:'6px'}}
           onClick={(e) => {
             e.stopPropagation();
             setFileDetails({
@@ -510,19 +504,6 @@ const EnhancedDocumentUpload = () => {
         >
           View
         </Button>
-         <Button
-         type="default"
-         icon={<EditOutlined size={16} />  }
-         onClick={(e) => {
-           e.stopPropagation();
-           setEditingFile(record);
-           setNewValidityDate(record.validity_date ? moment(record.validity_date) : null);
-           setIsEditModalVisible(true);
-         }}
-       >
-         Edit
-       </Button>
-       </>
       ),
     },
   ];
@@ -573,34 +554,6 @@ const EnhancedDocumentUpload = () => {
         });
       }
       setCurrentPath(newPath);
-    }
-  };
-
-  const handleUpdateValidityDate = async () => {
-    try {
-      if (!newValidityDate) {
-        message.error('Please select a new validity date');
-        return;
-      }
-
-      const response = await axios.put(`${API_URL}/update-documents-validity/`, {
-        file_name: editingFile.title,
-        validity_date: newValidityDate.format('YYYY-MM-DD'),
-        plant: plant,
-        part_numbers: editingFile.part_numbers
-      }, {
-        headers: { "Content-Type": "application/json" } // Ensure JSON format
-      });
-      
-
-      if (response.data) {
-        message.success('Validity date updated successfully');
-        setIsEditModalVisible(false);
-         
-        await fetchFolderData();
-      }
-    } catch (error) {
-      message.error(error.response?.data?.detail || 'Failed to update validity date');
     }
   };
 
@@ -1666,31 +1619,6 @@ const EnhancedDocumentUpload = () => {
           visible={isFileDetailsVisible}
           onClose={() => setIsFileDetailsVisible(false)}
         />
-
-      <Modal
-        title="Edit Validity Date"
-        open={isEditModalVisible}
-        onCancel={() => setIsEditModalVisible(false)}
-        onOk={handleUpdateValidityDate}
-        okText="Update"
-      >
-        <div className="space-y-4">
-          <div>
-            <p className="font-medium">File Name: {editingFile?.title}</p>
-            <p className="text-gray-600">
-              Part Numbers: {editingFile?.part_numbers?.join(', ') || '-'}
-            </p>
-          </div>
-          <div>
-            <p className="mb-2">New Validity Date:</p>
-            <DatePicker
-              value={newValidityDate ? dayjs(newValidityDate) : null}
-              onChange={(date) => setNewValidityDate(date)}
-              className="w-full"
-            />
-          </div>
-        </div>
-      </Modal>
       </div>
     </>
     );

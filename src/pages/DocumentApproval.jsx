@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, Space, Modal, Card, message } from 'antd';
-import { SearchOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { Table, Button, Input, Space, Modal, Card, message, Select, DatePicker } from 'antd';
+import { SearchOutlined, CheckCircleOutlined, CloseCircleOutlined, FilterOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
+import { useParams } from 'react-router-dom';
+
 
 const DocumentApproval = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -9,6 +11,18 @@ const DocumentApproval = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+  const [filters, setFilters] = useState({
+    status: [],
+    partNumber: [],
+    uploadDate: null
+  });
+  const [sortConfig, setSortConfig] = useState({
+    field: 'uploadDate',
+    order: 'descend'
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const {plant} = useParams();
 
   useEffect(() => {
     fetchDocuments();
@@ -24,12 +38,18 @@ const DocumentApproval = () => {
 
   const fetchDocuments = async () => {
     try {
-      const response = await fetch('http://192.168.137.161:7001/documents');
+      const response = await fetch(`http://127.0.0.1:7001/documents?plant=${plant}`, {
+        method: 'GET', // Explicitly define the HTTP method
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
       const data = await response.json();
       const formattedData = data.map(doc => ({
         key: doc.id.toString(),
         documentName: doc.file_name,
-        partNumber: doc.part_number_id,
+        partNumber: doc.part_number,
         uploadDate: new Date(doc.created_at).toLocaleDateString(),
         status: doc.status,
         filePath: doc.file_path,
@@ -48,7 +68,7 @@ const DocumentApproval = () => {
   const updateDocumentStatus = async (documentId, newStatus) => {
     setUpdating(true);
     try {
-      const response = await fetch('http://192.168.137.161:7001/documents', {
+      const response = await fetch(`http://127.0.0.1:7001/documents?plant=${plant}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -180,18 +200,129 @@ const DocumentApproval = () => {
     }
   };
 
+  const handleStatusFilter = (values) => {
+    setFilters(prev => ({ ...prev, status: values }));
+  };
+
+  const handlePartNumberFilter = (values) => {
+    setFilters(prev => ({ ...prev, partNumber: values }));
+  };
+
+  const handleDateFilter = (date) => {
+    setFilters(prev => ({ ...prev, uploadDate: date }));
+  };
+
+  const handleSort = (field) => {
+    setSortConfig(prev => ({
+      field,
+      order: prev.field === field && prev.order === 'ascend' ? 'descend' : 'ascend'
+    }));
+  };
+
+  const filteredAndSortedDocuments = documents
+    .filter(doc => {
+      const searchLower = searchTerm?.toLowerCase() || '';
+      const matchesSearch = !searchTerm || 
+        (doc.documentName?.toLowerCase() || '').includes(searchLower) ||
+        (doc.partNumber?.toLowerCase() || '').includes(searchLower);
+
+      const matchesStatus = filters.status.length === 0 || filters.status.includes(doc.status);
+      const matchesPartNumber = filters.partNumber.length === 0 || filters.partNumber.includes(doc.partNumber);
+      const matchesDate = !filters.uploadDate || 
+        new Date(doc.uploadDate).toDateString() === filters.uploadDate.toDate().toDateString();
+
+      return matchesSearch && matchesStatus && matchesPartNumber && matchesDate;
+    })
+    .sort((a, b) => {
+      const order = sortConfig.order === 'ascend' ? 1 : -1;
+      if (sortConfig.field === 'uploadDate') {
+        return (new Date(a.uploadDate) - new Date(b.uploadDate)) * order;
+      }
+      const aValue = a[sortConfig.field] || '';
+      const bValue = b[sortConfig.field] || '';
+      return (aValue > bValue ? 1 : -1) * order;
+    });
+
   return (
     <div className="p-6">
       {contextHolder}
       <h2 className="text-3xl font-bold mb-8 text-center lg:text-left lg:ml-[300px]">Document Approval</h2>
 
       <Card className="max-w-6xl mx-auto">
+        <div className="mb-6 flex flex-wrap gap-4">
+          <Input.Search
+            placeholder="Search documents..."
+            style={{ width: 250 }}
+            allowClear
+            onSearch={setSearchTerm}
+            onChange={(e) => {
+              if (!e.target.value) {
+                setSearchTerm('');
+              }
+            }}
+          />
+
+          <Select
+            mode="multiple"
+            placeholder="Filter by status"
+            style={{ width: 200 }}
+            onChange={handleStatusFilter}
+            allowClear
+          >
+            <Select.Option value="uploaded">Uploaded</Select.Option>
+            <Select.Option value="approved">Approved</Select.Option>
+            <Select.Option value="rejected">Rejected</Select.Option>
+          </Select>
+
+          <Select
+            mode="multiple"
+            placeholder="Filter by part number"
+            style={{ width: 200 }}
+            onChange={handlePartNumberFilter}
+            allowClear
+          >
+            {[...new Set(documents.map(doc => doc.partNumber))]
+              .filter(pn => pn)
+              .map(pn => (
+                <Select.Option key={pn} value={pn}>{pn}</Select.Option>
+              ))}
+          </Select>
+
+          <DatePicker
+            placeholder="Filter by date"
+            onChange={handleDateFilter}
+            allowClear
+          />
+
+          <div className="flex gap-2">
+            <Button
+              icon={sortConfig.order === 'ascend' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
+              onClick={() => handleSort('uploadDate')}
+              type={sortConfig.field === 'uploadDate' ? 'primary' : 'default'}
+            >
+              Sort by Date
+            </Button>
+            <Button
+              icon={sortConfig.order === 'ascend' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
+              onClick={() => handleSort('documentName')}
+              type={sortConfig.field === 'documentName' ? 'primary' : 'default'}
+            >
+              Sort by Name
+            </Button>
+          </div>
+        </div>
+
         <Table
           columns={columns}
-          dataSource={documents}
+          dataSource={filteredAndSortedDocuments}
           loading={loading}
           scroll={{ x: 600 }}
-          pagination={{ pageSize: 5 }}
+          pagination={{ 
+            pageSize: 5,
+            showTotal: (total) => `Total ${total} documents`,
+            showSizeChanger: true,
+            showQuickJumper: true
+          }}
         />
       </Card>
 

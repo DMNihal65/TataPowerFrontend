@@ -26,13 +26,6 @@ const DocumentRetrieval = () => {
   const [autoCompleteOptions, setAutoCompleteOptions] = useState([]);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
 
-  // New state variables for without part number section
-  const [selectedPlant, setSelectedPlant] = useState('');
-  const [folders, setFolders] = useState([]);
-  const [selectedFolder, setSelectedFolder] = useState(null);
-  const [folderFiles, setFolderFiles] = useState([]);
-  const [folderLoading, setFolderLoading] = useState(false);
-
   const {plant} = useParams();
 
   const pageSize = 12;
@@ -212,302 +205,166 @@ const DocumentRetrieval = () => {
     }
   };
 
-  // New functions for without part number section
-  const fetchFolders = async (plantValue) => {
-    try {
-      const response = await axios.get(`http://localhost:7001/getallfolders/?plant=${plantValue}`);
-      setFolders(response.data);
-    } catch (error) {
-      console.error('Error fetching folders:', error);
-      message.error('Failed to fetch folders');
-    }
-  };
-
-  const handlePlantChange = (value) => {
-    setSelectedPlant(value);
-    setSelectedFolder(null);
-    setFolderFiles([]);
-    fetchFolders(value);
-  };
-
-  const handleFolderSelect = (value) => {
-    setSelectedFolder(value);
-  };
-
-  const fetchFolderFiles = async () => {
-    if (!selectedFolder) {
-      message.error('Please select a folder first');
-      return;
-    }
-
-    setFolderLoading(true);
-    try {
-      const response = await axios.get(`http://localhost:7001/getallfolderswithfilesapproved/?plant=${selectedPlant}`);
-      const folderData = response.data;
-      
-      console.log('API Response:', folderData);
-      
-      // Find the selected folder's files
-      const selectedFolderData = folderData.find(folder => folder.id === selectedFolder);
-      console.log('Selected Folder Data:', selectedFolderData);
-      
-      if (!selectedFolderData || !selectedFolderData.file_name) {
-        console.log('No files found in folder:', selectedFolder);
-        message.info('No files found in the selected folder');
-        return;
-      }
-
-      // Transform folder files to match document format
-      const transformedFiles = selectedFolderData.file_name.map(file => {
-        console.log('Processing file:', file);
-        return {
-          fileName: file.file_name,
-          filePath: file.file_path,
-          fileType: getFileType(file.file_name),
-          validity_date: file.validity_date || '',
-          partNumber: file.part_numbers || '-',
-          fromFolder: true,
-          selected: false
-        };
-      });
-
-      console.log('Transformed Files:', transformedFiles);
-
-      // Update the documents array with the new files
-      setDocuments(prevDocs => {
-        // Remove any previous folder files
-        const docsWithoutFolderFiles = prevDocs.filter(doc => !doc.fromFolder);
-        // Add the new folder files
-        return [...docsWithoutFolderFiles, ...transformedFiles];
-      });
-
-      if (transformedFiles.length > 0) {
-        message.success(`Retrieved ${transformedFiles.length} files from the selected folder`);
-      } else {
-        message.info('No files found in the selected folder');
-      }
-    } catch (error) {
-      console.error('Error fetching folder files:', error);
-      console.error('Error details:', error.response?.data);
-      message.error('Failed to fetch files from the selected folder');
-    } finally {
-      setFolderLoading(false);
-    }
-  };
-
   return (
     <div className="p-2 sm:p-6 max-w-7xl mx-auto">
       <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Document Retrieval</h1>
 
-      {/* With Part Number Section */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        <Card className="flex-1 mb-4 sm:mb-6 shadow-lg rounded-lg" bordered>
-          <Form form={form} layout="vertical">
-            <h2 style={{fontSize:'20px', marginBottom:'15px'}} className="font-semibold">With Part Number</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Form.Item label="Select Existing Part Numbers">
-                <Select
-                  mode="multiple"
-                  placeholder="Select part numbers"
-                  value={partNumbers}
-                  onChange={handlePartNumberSelect}
-                  style={{ width: '100%' }}
-                  optionFilterProp="children"
-                >
-                  {existingPartNumbers.map(pn => (
-                    <Select.Option key={pn.id} value={pn.part_number}>
-                      {pn.part_number}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item label="Enter Part Number">
-                <AutoComplete
-                  value={manualPartNumber}
-                  options={autoCompleteOptions}
-                  onSearch={handlePartNumberSearch}
-                  onChange={(value) => setManualPartNumber(value)}
-                  onSelect={handlePartNumberEnter}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handlePartNumberEnter(manualPartNumber);
-                    }
-                  }}
-                  placeholder="Type part number and press Enter"
-                  style={{ width: '100%' }}
-                />
-              </Form.Item>
-
-              <Form.Item label="Generate Range" className="md:col-span-2">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Space.Compact className="flex-grow">
-                    <Form.Item name="range_start" noStyle>
-                      <Input placeholder="Start (e.g., PN001)" className="w-full sm:w-40" />
-                    </Form.Item>
-                    <Input
-                      className="w-20 text-center"
-                      style={{ borderLeft: 0, borderRight: 0, pointerEvents: 'none' }}
-                      placeholder="to"
-                      disabled
-                    />
-                    <Form.Item name="range_end" noStyle>
-                      <Input placeholder="End (e.g., PN010)" className="w-full sm:w-40" />
-                    </Form.Item>
-                  </Space.Compact>
-                  <Button 
-                    type="primary" 
-                    onClick={() => form.validateFields().then(handleRangeGenerate)}
-                    className="w-full sm:w-auto"
-                  >
-                    Add Range
-                  </Button>
-                </div>
-              </Form.Item>
-            </div>
-
-            {/* Preview Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-              {/* Selected Part Numbers and Files Cards */}
-              {partNumbers.length > 0 && (
-                <Card className="h-full" style={{ boxShadow: 'none' }} bordered>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-medium text-lg">Selected Part Numbers ({partNumbers.length})</h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto">
-                    {partNumbers.map(pn => (
-            <span
-              key={pn}
-                        className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2 text-sm"
-            >
-              {pn}
-                        <X 
-                          size={14} 
-                          className="cursor-pointer hover:text-blue-600"
-                          onClick={() => setPartNumbers(prev => prev.filter(p => p !== pn))}
-                        />
-            </span>
-          ))}
-        </div>
-                </Card>
-              )}
-
-              {selectedFiles.length > 0 && (
-                <Card className="h-full" style={{ boxShadow: 'none' }} bordered>
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-                    <h3 className="font-medium text-lg">Selected Files ({selectedFiles.length})</h3>
-                    <Button
-                      type="primary"
-                      icon={<Download size={18} />}
-                      onClick={() => downloadSelectedFiles(selectedFiles)}
-                      className="w-full sm:w-auto"
-                    >
-                      Download ZIP
-                    </Button>
-                  </div>
-                  <div className="max-h-[200px] overflow-y-auto">
-                    <div className="grid grid-cols-1 gap-2">
-                      {selectedFiles.map((file, index) => (
-                        <div 
-                          key={index} 
-                          className="flex items-center justify-between p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
-                        >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <FileDown size={16} className="text-blue-500 flex-shrink-0" />
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 flex-1 min-w-0">
-                              <span className="truncate text-sm font-medium">{file.fileName}</span>
-                              <span className="text-xs text-gray-500">({file.partNumber})</span>
-                            </div>
-                          </div>
-                          <Button
-                            type="text"
-                            icon={<X size={16} />}
-                            onClick={() => setSelectedFiles(files => files.filter(f => f.filePath !== file.filePath))}
-                            className="flex-shrink-0"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </Card>
-              )}
-            </div>
-
-            <div className="mt-4 flex justify-center sm:justify-start">
-              <Space>
-          <Button
-                  type="primary"
-            onClick={fetchDocuments}
-                  icon={<Search size={18} />}
-                  loading={loading}
-                  className="w-full sm:w-auto"
-                >
-                  Retrieve Documents
-                </Button>
-                <Button
-                  icon={viewMode === 'grid' ? <ListIcon size={18} /> : <LayoutGrid size={18} />}
-                  onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                  className="w-full sm:w-auto"
-                >
-                  {viewMode === 'grid' ? 'List View' : 'Grid View'}
-                </Button>
-              </Space>
-            </div>
-          </Form>
-        </Card>
-
-        {/* Without Part Number Section */}
-        <Card className="flex-1 mb-4 sm:mb-6 shadow-lg rounded-lg" bordered>
-          <h2 style={{fontSize:'20px', marginBottom:'15px'}} className="font-semibold">Without Part Number</h2>
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Select Plant</label>
+      <Card className="mb-4 sm:mb-6" style={{ boxShadow: 'none' }} bordered>
+        <Form form={form} layout="vertical">
+        <h2 style={{fontSize:'25px', marginBottom:'10px'}}>With Part Number</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Form.Item label="Select Existing Part Numbers">
               <Select
+                mode="multiple"
+                placeholder="Select part numbers"
+                value={partNumbers}
+                onChange={handlePartNumberSelect}
                 style={{ width: '100%' }}
-                placeholder="Select plant"
-                value={selectedPlant}
-                onChange={handlePlantChange}
+                optionFilterProp="children"
               >
-                <Option value="tps">Tata Power Solar</Option>
-                <Option value="tprel">Tata Power Renewable Energy Limited</Option>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Select Folder</label>
-              <Select
-                style={{ width: '100%' }}
-                placeholder="Select folder"
-                value={selectedFolder}
-                onChange={handleFolderSelect}
-                disabled={!selectedPlant}
-              >
-                {folders.map(folder => (
-                  <Option key={folder.id} value={folder.id}>
-                    {folder.name}
-                  </Option>
+                {existingPartNumbers.map(pn => (
+                  <Select.Option key={pn.id} value={pn.part_number}>
+                    {pn.part_number}
+                  </Select.Option>
                 ))}
               </Select>
-            </div>
+            </Form.Item>
 
-            <div className="flex items-end">
-              <Button
-                type="primary"
-                onClick={fetchFolderFiles}
-                loading={folderLoading}
-                disabled={!selectedFolder}
-                icon={<Search size={18} />}
-                className="w-full"
-              >
-            Retrieve Documents
-          </Button>
-        </div>
+            <Form.Item label="Enter Part Number">
+              <AutoComplete
+                value={manualPartNumber}
+                options={autoCompleteOptions}
+                onSearch={handlePartNumberSearch}
+                onChange={(value) => setManualPartNumber(value)}
+                onSelect={handlePartNumberEnter}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handlePartNumberEnter(manualPartNumber);
+                  }
+                }}
+                placeholder="Type part number and press Enter"
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+
+            <Form.Item label="Generate Range" className="md:col-span-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Space.Compact className="flex-grow">
+                  <Form.Item name="range_start" noStyle>
+                    <Input placeholder="Start (e.g., PN001)" className="w-full sm:w-40" />
+                  </Form.Item>
+                  <Input
+                    className="w-20 text-center"
+                    style={{ borderLeft: 0, borderRight: 0, pointerEvents: 'none' }}
+                    placeholder="to"
+                    disabled
+                  />
+                  <Form.Item name="range_end" noStyle>
+                    <Input placeholder="End (e.g., PN010)" className="w-full sm:w-40" />
+                  </Form.Item>
+                </Space.Compact>
+                <Button 
+                  type="primary" 
+                  onClick={() => form.validateFields().then(handleRangeGenerate)}
+                  className="w-full sm:w-auto"
+                >
+                  Add Range
+                </Button>
+              </div>
+            </Form.Item>
           </div>
-        </Card>
-      </div>
 
-      {/* Updated Card View for All Files */}
+          {/* Preview Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+            {/* Selected Part Numbers and Files Cards */}
+            {partNumbers.length > 0 && (
+              <Card className="h-full" style={{ boxShadow: 'none' }} bordered>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-medium text-lg">Selected Part Numbers ({partNumbers.length})</h3>
+                </div>
+                <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto">
+                  {partNumbers.map(pn => (
+                    <span 
+                      key={pn} 
+                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2 text-sm"
+                    >
+                      {pn}
+                      <X 
+                        size={14} 
+                        className="cursor-pointer hover:text-blue-600"
+                        onClick={() => setPartNumbers(prev => prev.filter(p => p !== pn))}
+                      />
+                    </span>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {selectedFiles.length > 0 && (
+              <Card className="h-full" style={{ boxShadow: 'none' }} bordered>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                  <h3 className="font-medium text-lg">Selected Files ({selectedFiles.length})</h3>
+                  <Button
+                    type="primary"
+                    icon={<Download size={18} />}
+                    onClick={() => downloadSelectedFiles(selectedFiles)}
+                    className="w-full sm:w-auto"
+                  >
+                    Download ZIP
+                  </Button>
+                </div>
+                <div className="max-h-[200px] overflow-y-auto">
+                  <div className="grid grid-cols-1 gap-2">
+                    {selectedFiles.map((file, index) => (
+                      <div 
+                        key={index} 
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <FileDown size={16} className="text-blue-500 flex-shrink-0" />
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 flex-1 min-w-0">
+                            <span className="truncate text-sm font-medium">{file.fileName}</span>
+                            <span className="text-xs text-gray-500">({file.partNumber})</span>
+                          </div>
+                        </div>
+                        <Button
+                          type="text"
+                          icon={<X size={16} />}
+                          onClick={() => setSelectedFiles(files => files.filter(f => f.filePath !== file.filePath))}
+                          className="flex-shrink-0"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
+
+          <div className="mt-4 flex justify-center sm:justify-start">
+            <Space>
+              <Button 
+                type="primary"
+                onClick={fetchDocuments}
+                icon={<Search size={18} />}
+                loading={loading}
+                className="w-full sm:w-auto"
+              >
+                Retrieve Documents
+              </Button>
+              <Button
+                icon={viewMode === 'grid' ? <ListIcon size={18} /> : <LayoutGrid size={18} />}
+                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                className="w-full sm:w-auto"
+              >
+                {viewMode === 'grid' ? 'List View' : 'Grid View'}
+              </Button>
+            </Space>
+          </div>
+        </Form>
+      </Card>
+
       <Card style={{ boxShadow: 'none' }} bordered>
         <div className="mb-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
           <div className="w-full sm:w-auto">
@@ -555,7 +412,7 @@ const DocumentRetrieval = () => {
           </div>
         </div>
 
-        {(loading || folderLoading) ? (
+        {loading ? (
           <div className="flex justify-center items-center h-64">
             <Spin size="large" />
           </div>
@@ -571,35 +428,9 @@ const DocumentRetrieval = () => {
                   hoverable
                   className={`relative border ${
                     selectedFiles.some(f => f.filePath === doc.filePath) ? 'border-blue-500 border-2' : 'border-gray-200'
-                  } shadow-md hover:shadow-lg transition-all`}
+                  }`}
+                  style={{ boxShadow: 'none' }}
                   bodyStyle={{ padding: '12px', cursor: 'default' }}
-                  cover={
-                    <div className="h-32 sm:h-40 flex items-center justify-center bg-gray-50 overflow-hidden">
-                      {doc.fileType === 'pdf' ? (
-                        <div className="relative w-full h-full">
-                          <iframe
-                            src={`${doc.filePath}#view=Fit`}
-                            className="w-full h-full preview-iframe"
-                            style={{ border: 'none' }}
-                            title={doc.fileName}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white pointer-events-none" />
-                        </div>
-                      ) : ['jpg', 'jpeg', 'png'].includes(doc.fileType) ? (
-                        <img
-                          src={doc.filePath}
-                          alt={doc.fileName}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = 'path/to/fallback/image.png';
-                          }}
-                        />
-                      ) : (
-                        <File size={48} className="text-gray-400" />
-                      )}
-                    </div>
-                  }
                   actions={[
                     <div className="flex justify-center">
                       <Checkbox
@@ -627,6 +458,33 @@ const DocumentRetrieval = () => {
                       View
                     </Button>
                   ]}
+                  cover={
+                    <div className="h-32 sm:h-40 flex items-center justify-center bg-gray-50 overflow-hidden">
+                      {doc.fileType === 'pdf' ? (
+                        <div className="relative w-full h-full">
+                          <iframe
+                            src={`${doc.filePath}#view=Fit`}
+                            className="w-full h-full preview-iframe"
+                            style={{ border: 'none' }}
+                            title={doc.fileName}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-b from-transparent pointer-events-none" />
+                        </div>
+                      ) : ['jpg', 'jpeg', 'png'].includes(doc.fileType) ? (
+                        <img
+                          src={doc.filePath}
+                          alt={doc.fileName}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'path/to/fallback/image.png';
+                          }}
+                        />
+                      ) : (
+                        <File size={48} className="text-gray-400" />
+                      )}
+                    </div>
+                  }
                 >
                   <Meta
                     title={<div className="truncate text-sm sm:text-base font-medium">{doc.fileName}</div>}
@@ -635,22 +493,9 @@ const DocumentRetrieval = () => {
                         <div className="flex items-center gap-1">
                           <span className="font-medium">PN:</span> {doc.partNumber}
                         </div>
-                        {doc.validity_date && (
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium">Validity:</span>{' '}
-                            {new Date(doc.validity_date).toLocaleDateString()}
-                          </div>
-                        )}
                         <div className="flex items-center gap-1">
                           <span className="font-medium">Type:</span> {doc.fileType.toUpperCase()}
                         </div>
-                        {doc.fromFolder && (
-                          <div className="mt-1">
-                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                              From Folder
-                            </span>
-                          </div>
-                        )}
                       </div>
                     }
                   />
@@ -783,12 +628,12 @@ const DocumentRetrieval = () => {
             <div className="lg:w-3/4 h-full">
               <div className="h-full relative">
                 {selectedDocument.fileType === 'pdf' ? (
-                <iframe
-                  src={selectedDocument.filePath}
+                  <iframe
+                    src={selectedDocument.filePath}
                     className="w-full h-full absolute inset-0 modal-iframe"
                     style={{ border: 'none' }}
-                  title="Document Preview"
-                />
+                    title="Document Preview"
+                  />
                 ) : ['jpg', 'jpeg', 'png'].includes(selectedDocument.fileType) ? (
                   <div className="w-full h-full flex items-center justify-center bg-gray-100">
                     <img
